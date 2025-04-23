@@ -1,9 +1,9 @@
 import os
-import secrets_
 from dataclasses import dataclass
 from typing import List
 
 import requests
+import secrets_
 from bs4 import BeautifulSoup
 from googlesearch import search
 from langchain.prompts import ChatPromptTemplate
@@ -31,7 +31,7 @@ class SearchResult:
 # Search and Scraping Functions
 def google(query: str) -> List[SearchResult]:
     """Perform a Google search and return results as SearchResult objects."""
-    google_search = search(query, advanced=True)
+    google_search = search(query, advanced=True, num_results=10)
     return [
         SearchResult(title=result.title, url=result.url, snippet=result.description)
         for result in google_search
@@ -200,6 +200,7 @@ def filter_partner_universities(
 
     template = """
     For each university in the list below, evaluate:
+    0. (Important) If the university is not a real university, filter it out.
     1. If the university likely offers programs in any of these languages: {languages}
     2. If the student's GPA of {gpa} (on a 4.0 scale) is likely sufficient for admission
 
@@ -264,7 +265,7 @@ def search_partner_universities(input_dict: dict) -> List[dict]:
     university_url = get_university_base_url(input_dict["university"])
 
     # Create search query with university name, major and add base URL
-    query = f"{input_dict['university']} {input_dict['major']} Partner Universitäten {university_url}"
+    query = f"{input_dict['university']} {input_dict['major']} (Erasmus) Partner Universitäten {university_url}"
     print(f"Search query: {query}")
 
     results = google(query)
@@ -286,6 +287,9 @@ def search_partner_universities(input_dict: dict) -> List[dict]:
             .strip()
         )
         university_list = [u.strip() for u in university_lines.split("\n") if u.strip()]
+
+        # Limit to 8 universities
+        university_list = university_list[:8]
 
         # Generate detailed university information using LLM
         for university_name in university_list:
