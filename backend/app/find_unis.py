@@ -256,7 +256,8 @@ def filter_partner_universities(
 def search_partner_universities(input_dict: dict) -> List[dict]:
     """
     Search for partner universities based on input criteria and return filtered results.
-    Returns a list of dictionaries with 'name' and 'description' fields.
+    Returns a list of dictionaries with university information including title, description,
+    image URL, student count, ranking, and languages.
     """
     # Get university base URL
     university_url = get_university_base_url(input_dict["university"])
@@ -266,7 +267,6 @@ def search_partner_universities(input_dict: dict) -> List[dict]:
     print(f"Search query: {query}")
 
     results = google(query)
-    filtered_results = []
 
     if not results:
         print("No search results found")
@@ -277,6 +277,7 @@ def search_partner_universities(input_dict: dict) -> List[dict]:
     universities_text = find_partner_universities_from_results(results, query)
 
     # Extract just the list of universities
+    filtered_results = []
     if "Partner universities found:" in universities_text:
         university_lines = (
             universities_text.split("Partner universities found:")[1]
@@ -285,35 +286,112 @@ def search_partner_universities(input_dict: dict) -> List[dict]:
         )
         university_list = [u.strip() for u in university_lines.split("\n") if u.strip()]
 
-        # Filter universities
-        filtered_universities = filter_partner_universities(university_list, input_dict)
-
-        # Convert to required output format
-        for uni in filtered_universities:
-            description_parts = []
-
-            # Add language compatibility info
-            if uni.get("language_match"):
-                description_parts.append("✅ Language match")
-            else:
-                description_parts.append("❌ Language mismatch")
-
-            # Add GPA compatibility info
-            if uni.get("gpa_sufficient"):
-                description_parts.append("✅ GPA sufficient")
-            else:
-                description_parts.append("❌ GPA insufficient")
-
-            # Add comments if available
-            if uni.get("comments"):
-                description_parts.append(f"Comments: {uni['comments']}")
-
-            # Create the entry in the required format
-            filtered_results.append(
-                {"name": uni["name"], "description": " | ".join(description_parts)}
-            )
+        # Generate detailed university information using LLM
+        for university_name in university_list:
+            uni_data = get_university_details(university_name, input_dict["languages"])
+            filtered_results.append(uni_data)
 
     return filtered_results
+
+
+def search_university_image(university_name: str) -> str:
+    """
+    Perform a DuckDuckGo search to find an image link for the university.
+    Returns a URL to an image of the university.
+    """
+    try:
+        # Import the DuckDuckGo search library
+        from duckduckgo_search import DDGS
+
+        # Initialize the DuckDuckGo search client
+        ddgs = DDGS()
+
+        # Search for campus images
+        query = f"{university_name} university campus"
+        images = list(ddgs.images(query, max_results=5))
+
+        for image in images:
+            if image and "image" in image and image["image"]:
+                # Verify it's an image URL
+                if any(
+                    ext in image["image"].lower()
+                    for ext in [".jpg", ".jpeg", ".png", ".gif"]
+                ):
+                    return image["image"]
+
+        # If still no results, return None
+        return None
+    except Exception as e:
+        print(f"Error searching for image: {str(e)}")
+        return None
+
+
+def get_university_details(university_name: str, student_languages: List[str]) -> dict:
+    """
+    Use LLM to generate comprehensive details about a university,
+    and search for a real image of the university.
+    """
+    template = """
+    Provide comprehensive information about {university_name} in JSON format.
+    Include the following fields:
+    1. A brief description of the university (2-3 sentences)
+    2. An estimate of the student count
+    3. A ranking category (high, mid, or low)
+    4. Languages used for instruction
+    
+    Consider the student's language proficiencies ({languages}) when assessing compatibility.
+    
+    Return ONLY a JSON object with this format:
+    {{
+        "title": "{university_name}",
+        "description": "Brief description of the university",
+        "student_count": estimated_number,
+        "ranking": "high|mid|low",
+        "languages": ["Language1", "Language2"]
+    }}
+    """
+
+    prompt = ChatPromptTemplate.from_template(template)
+    chain = prompt | llm
+    result = chain.invoke(
+        {
+            "university_name": university_name,
+            "languages": ", ".join(student_languages),
+        }
+    )
+
+    # Process the returned JSON
+    import json
+
+    try:
+        # The LLM might wrap the response in ```json and ``` or other formatting
+        response_text = result.content.strip()
+        if "```" in response_text:
+            # Extract content between code blocks
+            response_text = response_text.split("```")[1]
+            if response_text.startswith("json"):
+                response_text = response_text[4:].strip()
+
+        # Try to parse the JSON
+        university_data = json.loads(response_text)
+
+        # Search for a real image of the university
+        university_data["image"] = search_university_image(university_name)
+
+        return university_data
+    except json.JSONDecodeError as e:
+        print(f"Error parsing LLM response for {university_name}: {e}")
+        # Return a minimal fallback object if parsing fails
+        return {
+            "title": university_name,
+            "description": "Information unavailable",
+            "image": search_university_image(
+                university_name
+            ),  # Still try to get an image
+            "student_count": 0,
+            "ranking": "unknown",
+            "languages": [],
+        }
 
 
 # Main execution block
@@ -334,7 +412,11 @@ if __name__ == "__main__":
     if results:
         print("\nPartner universities matching your criteria:")
         for uni in results:
-            print(f"• {uni['name']}")
-            print(f"  {uni['description']}")
+            print(f"• {uni['title']}")
+            print(f"  Description: {uni['description']}")
+            print(f"  Student Count: {uni['student_count']}")
+            print(f"  Ranking: {uni['ranking']}")
+            print(f"  Languages: {', '.join(uni['languages'])}")
+            print(f"  Image URL: {uni['image']}")
     else:
         print("No matching partner universities found.")

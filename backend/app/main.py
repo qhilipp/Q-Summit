@@ -33,10 +33,14 @@ class UniversitySearchInput(BaseModel):
     end_year: Optional[int] = None
 
 
-# Define response model
+# Define updated response model to match new output format
 class UniversityResult(BaseModel):
-    name: str
+    title: str
     description: str
+    image: Optional[str] = None
+    student_count: int
+    ranking: str
+    languages: List[str]
 
 
 @app.get("/items/{item_id}")
@@ -48,7 +52,8 @@ def read_item(item_id: int, q: Union[str, None] = None):
 def search_universities(input_data: UniversitySearchInput):
     """
     Search for partner universities based on the provided criteria.
-    Returns a list of universities with compatibility information.
+    Returns a list of universities with detailed information including
+    description, image, student count, ranking, and supported languages.
     """
     # Convert the Pydantic model to a dictionary for our function
     input_dict = input_data.dict()
