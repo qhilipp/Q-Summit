@@ -7,16 +7,13 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
-origins = [
-    "http://localhost:3000",  # Your frontend dev server
-]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # Can also use ["*"] for all origins (not for production)
     allow_credentials=True,
     allow_methods=["*"],  # Allow all HTTP methods (GET, POST, etc)
     allow_headers=["*"],  # Allow all headers
+    allow_origins=["*"],
 )
 
 
