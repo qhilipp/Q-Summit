@@ -150,8 +150,8 @@ const LanguagesInfo = () => {
         <div className="selected-languages">
           {selectedLanguages.map((lang, index) => (
             <div key={index} className="language-chip">
-              <span className="language-flag">{lang.flag}</span>
               <span className="language-name">{lang.name}</span>
+              <span className="language-flag">{lang.flag}</span>
               <button className="remove-language" onClick={() => handleRemoveLanguage(lang)}>X</button>
             </div>
           ))}
