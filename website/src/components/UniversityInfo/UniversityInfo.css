@@ -1,0 +1,111 @@
+.university-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+  background-color: #121212;
+}
+
+.input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
+  max-width: 500px;
+  margin: 2rem 0;
+  align-items: flex-start;
+}
+
+.input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.info-input {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.1rem;
+  border: 2px solid #3d3d3d;
+  border-radius: 8px;
+  background-color: #1e1e1e;
+  color: #ffffff;
+  transition: all 0.3s ease;
+  text-align: left;
+}
+
+.info-input:focus {
+  outline: none;
+  border-color: #c0c0c0;
+  box-shadow: 0 0 0 2px rgba(94, 221, 212, 0.2);
+}
+
+.info-input::placeholder {
+  color: #666;
+}
+
+.suggestions-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: rgba(30, 30, 30, 0.85); /* Fallback for older browsers */
+  background-color: rgba(30, 30, 30, 0.85); /* Modern browsers */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px); /* Safari support */
+  border: 1px solid rgba(45, 45, 45, 0.5);
+  border-radius: 8px;
+  margin-top: 0.5rem;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.suggestion-item {
+  padding: 1rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid rgba(45, 45, 45, 0.3);
+  text-align: left;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item:hover {
+  background-color: rgba(45, 45, 45, 0.5);
+}
+
+.university-name {
+  color: #ffffff;
+  font-weight: 500;
+  flex: 1;
+  margin-right: 1rem;
+  text-align: left;
+}
+
+.university-flag {
+  font-size: 1.5rem;
+  line-height: 1;
+  margin-left: 0.5rem;
+}
+
+.university-country {
+  color: #c0c0c0;
+  font-size: 0.9rem;
+}
+
+.loading-indicator {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #c0c0c0;
+  font-size: 0.9rem;
+} 
