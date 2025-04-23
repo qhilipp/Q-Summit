@@ -10,7 +10,7 @@ const DEFAULT_API_URL = 'http://localhost:8000/search_universities';
 
 const ResultsPage = () => {
   const navigate = useNavigate();
-  const { userData, sendDataToApi } = useUserData();
+  const { userData } = useUserData();
   const [isLoading, setIsLoading] = useState(true);
   const [universities, setUniversities] = useState([]);
   const [error, setError] = useState('');
@@ -18,40 +18,42 @@ const ResultsPage = () => {
 
   useEffect(() => {
     const fetchUniversities = async () => {
-      const myHeaders = new Headers();
-myHeaders.append("Content-Type", "application/json");
+      try {
+        const headers = new Headers();
+        headers.append("Content-Type", "application/json");
 
-const raw = JSON.stringify({
-  "university": "University of Muenster",
-  "major": "Computer Science",
-  "gpa": 3.7,
-  "languages": [
-    "English",
-    "German"
-  ],
-  "budget": 1200,
-  "start_month": 9,
-  "start_year": 2024,
-  "end_month": 6,
-  "end_year": 2025
-});
+        // Use userData from context instead of hardcoded values
+        const requestOptions = {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify(userData),
+          redirect: "follow"
+        };
 
-const requestOptions = {
-  method: "POST",
-  headers: myHeaders,
-  body: raw,
-  redirect: "follow"
-};
-
-fetch("http://localhost:8000/search_universities", requestOptions)
-  .then((response) => response.text())
-  .then((result) => console.log(result))
-  .catch((error) => console.error(error));
+        // Show loading state
+        setIsLoading(true);
+        
+        const response = await fetch(DEFAULT_API_URL, requestOptions);
+        
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        setUniversities(result);
+        setError('');
+      } catch (error) {
+        console.error("Error fetching universities:", error);
+        setError('Failed to fetch university matches. Please try again.');
+        setUniversities([]);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     // Call API when component mounts
     fetchUniversities();
-  }, [sendDataToApi, userData]);
+  }, [userData]);
 
   const handleUniversityClick = (university) => {
     // Handle university selection (can be expanded later)

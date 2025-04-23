@@ -8,8 +8,9 @@ import TravelMonthsInfo from '../TravelMonthsInfo/TravelMonthsInfo.jsx';
 import ResultsPage from '../ResultsPage/ResultsPage.jsx';
 import './App.css';
 
+// Main application component - updated for hot reload test
 function App() {
-  console.log('App component rendered');
+  console.log('App component rendered - Hot reload test is working!');
   return (
     <Router>
       <Routes>

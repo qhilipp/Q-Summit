@@ -1,6 +1,7 @@
 from typing import List, Optional, Union
 
 from app.find_unis import search_partner_universities
+from app.get_uni_details import Quote, get_uni_details
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -40,6 +41,16 @@ class UniversityResult(BaseModel):
     languages: List[str]
 
 
+# Define models for university details endpoint
+class QuoteModel(BaseModel):
+    quote: str
+    source_link: str
+
+
+class UniversityDetailsResponse(BaseModel):
+    quotes: List[QuoteModel]
+
+
 @app.get("/items/{item_id}")
 def read_item(item_id: int, q: Union[str, None] = None):
     return {"item_id": item_id * 2, "q": q}
@@ -59,3 +70,27 @@ def search_universities(input_data: UniversitySearchInput):
     results = search_partner_universities(input_dict)
 
     return results
+
+
+@app.get(
+    "/university_details/{university_name}", response_model=UniversityDetailsResponse
+)
+def university_details(university_name: str):
+    """
+    Get detailed information about a university, including student quotes.
+
+    Args:
+        university_name: The name of the university to get details for
+
+    Returns:
+        UniversityDetailsResponse object with quotes
+    """
+    # Call the get_uni_details function
+    details = get_uni_details(university_name)
+
+    # Convert the dataclass objects to Pydantic models
+    return UniversityDetailsResponse(
+        quotes=[
+            QuoteModel(quote=q.quote, source_link=q.source_link) for q in details.quotes
+        ]
+    )

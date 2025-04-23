@@ -1,4 +1,4 @@
-FROM node:20-alpine as build
+FROM node:20-alpine
 
 # Set working directory
 WORKDIR /app
@@ -12,20 +12,9 @@ RUN npm ci
 # Copy all files
 COPY . .
 
-# Build the app
-RUN npm run build
+# Expose port (default Vite dev server port)
+EXPOSE 5173
 
-# Stage 2: Serve the app
-FROM nginx:alpine
-
-# Copy built assets from the build stage
-COPY --from=build /app/dist /usr/share/nginx/html
-
-# Add nginx config (if needed)
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Expose port
-EXPOSE 80
-
-# Start Nginx
-CMD ["nginx", "-g", "daemon off;"] 
+# Start the development server
+ENV CHOKIDAR_USEPOLLING=true
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"] 
