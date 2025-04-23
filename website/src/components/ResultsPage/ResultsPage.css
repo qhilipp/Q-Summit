@@ -1,0 +1,162 @@
+.results-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 100vh;
+  padding: 2rem;
+  background-color: #121212;
+  color: white;
+}
+
+.results-heading {
+  text-align: center;
+  margin-bottom: 3rem;
+  font-size: 2.5rem;
+  color: white;
+}
+
+/* Loading spinner styles */
+.spinner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  border-top-color: #3498db;
+  animation: spin 1s ease-in-out infinite;
+  margin-bottom: 1.5rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  font-size: 1.2rem;
+  color: #ccc;
+  text-align: center;
+}
+
+/* Error styles */
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2rem;
+  padding: 2rem;
+  border-radius: 8px;
+  background-color: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  max-width: 600px;
+}
+
+.error-message {
+  color: #e74c3c;
+  font-size: 1.1rem;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.retry-button {
+  padding: 0.8rem 2rem;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.retry-button:hover {
+  background-color: #2980b9;
+  transform: translateY(-2px);
+}
+
+/* Results content */
+.results-content {
+  width: 100%;
+  max-width: 1200px;
+  margin-top: 2rem;
+}
+
+.results-description {
+  text-align: center;
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+  color: #ccc;
+}
+
+.universities-scroll-container {
+  width: 100%;
+  overflow-x: auto;
+  padding: 1rem 0;
+  scrollbar-width: thin;
+  scrollbar-color: #3498db #1e1e1e;
+}
+
+/* Custom scrollbar for webkit browsers */
+.universities-scroll-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.universities-scroll-container::-webkit-scrollbar-track {
+  background: #1e1e1e;
+  border-radius: 4px;
+}
+
+.universities-scroll-container::-webkit-scrollbar-thumb {
+  background-color: #3498db;
+  border-radius: 4px;
+}
+
+.universities-list {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.5rem;
+  min-width: min-content;
+}
+
+.university-card {
+  flex: 0 0 auto;
+  width: 280px;
+  background-color: #1e1e1e;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.university-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+  background-color: #2a2a2a;
+  border-color: rgba(52, 152, 219, 0.5);
+}
+
+.university-name {
+  font-size: 1.3rem;
+  color: white;
+  margin: 0;
+  text-align: center;
+}
+
+.no-results {
+  color: #ccc;
+  font-size: 1.1rem;
+  text-align: center;
+  padding: 2rem;
+} 

@@ -1,44 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import Button from '../Button/Button';
 import './Welcome.css';
 
 const Welcome = () => {
-  const [displayText, setDisplayText] = useState('');
-  const fullText = "Study AIbroad";
   const navigate = useNavigate();
-
-  useEffect(() => {
-    let currentIndex = 0;
-    const interval = setInterval(() => {
-      if (currentIndex <= fullText.length) {
-        setDisplayText(fullText.slice(0, currentIndex));
-        currentIndex++;
-      } else {
-        clearInterval(interval);
-      }
-    }, 100);
-
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <div className="welcome-container">
-      <div className="welcome-content">
-        <motion.h1 
-          className="welcome-heading"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          {displayText}
-        </motion.h1>
-        <Button onClick={() => navigate('/university')}>
+  <div className="content-wrapper">
+    <div className="welcome-content">
+      <div className="content-inner">
+        <h2 className="welcome-title">Want to study abroad?<br/><i>We got you!</i></h2>
+        <p className="welcome-description">Planning your semester abroad can feel overwhelming – but it doesn't have to be. Our AI-powered tool helps you find the perfect university match in just a few clicks. Answer a few quick questions, and we'll suggest study destinations tailored to your interests, field, and goals. Whether you're dreaming of big cities, beach towns, or top-ranked programs, we've got options. No more hours of research – get all the key info you need in one place. From application deadlines to housing tips, we've got your back. Start exploring your global adventure today – it's that easy.</p>
+        <Button onClick={() => navigate('/gpa')} className="full-width-button">
           Let's go
         </Button>
       </div>
     </div>
+    
+    <nav className="nav-bar">
+      <h1 className="nav-title">Study AIbroad</h1>
+    </nav>
+  </div>
+</div>
   );
 };
 

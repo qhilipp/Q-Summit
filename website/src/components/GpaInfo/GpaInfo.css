@@ -1,0 +1,65 @@
+.gpa-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+  background-color: #121212;
+}
+
+.gpa-heading {
+  color: #ffffff;
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 2.5rem;
+}
+
+.input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
+  max-width: 500px;
+  margin: 2rem 0;
+  align-items: flex-start;
+}
+
+.input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.info-input {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.1rem;
+  border: 2px solid #3d3d3d;
+  border-radius: 8px;
+  background-color: #1e1e1e;
+  color: #ffffff;
+  transition: all 0.3s ease;
+  text-align: left;
+}
+
+.info-input:focus {
+  outline: none;
+  border-color: #c0c0c0;
+  box-shadow: 0 0 0 2px rgba(94, 221, 212, 0.2);
+}
+
+.info-input::placeholder {
+  color: #666;
+}
+
+.info-input.error {
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.2);
+}
+
+.error-message {
+  color: #e74c3c;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  text-align: left;
+} 

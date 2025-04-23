@@ -197,7 +197,7 @@ const UniversityInfo = () => {
         />
       </div>
       
-      <Button onClick={() => navigate('/home')}>
+      <Button onClick={() => navigate('/gpa')}>
         Let's go
       </Button>
     </motion.div>

@@ -36,4 +36,21 @@
 
 .welcome-button:active {
   transform: translateY(-1px) scale(0.98);
+}
+
+.welcome-button.skip-button {
+  background: transparent;
+  border: 2px solid #666;
+  box-shadow: none;
+  color: #ddd;
+}
+
+.welcome-button.skip-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #999;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.welcome-button.skip-button::before {
+  display: none;
 } 

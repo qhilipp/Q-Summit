@@ -1,6 +1,11 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Welcome from '../Welcome/Welcome.jsx';
 import UniversityInfo from '../UniversityInfo/UniversityInfo.jsx';
+import GpaInfo from '../GpaInfo/GpaInfo.jsx';
+import LanguagesInfo from '../LanguagesInfo/LanguagesInfo.jsx';
+import BudgetInfo from '../BudgetInfo/BudgetInfo.jsx';
+import TravelMonthsInfo from '../TravelMonthsInfo/TravelMonthsInfo.jsx';
+import ResultsPage from '../ResultsPage/ResultsPage.jsx';
 import './App.css';
 
 function App() {
@@ -10,6 +15,11 @@ function App() {
       <Routes>
         <Route path="/" element={<Welcome />} />
         <Route path="/university" element={<UniversityInfo />} />
+        <Route path="/gpa" element={<GpaInfo />} />
+        <Route path="/languages" element={<LanguagesInfo />} />
+        <Route path="/budget" element={<BudgetInfo />} />
+        <Route path="/travel-months" element={<TravelMonthsInfo />} />
+        <Route path="/results" element={<ResultsPage />} />
       </Routes>
     </Router>
   );

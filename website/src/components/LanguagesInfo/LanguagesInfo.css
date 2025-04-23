@@ -1,4 +1,4 @@
-.university-container {
+.languages-container {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -8,10 +8,17 @@
   background-color: #121212;
 }
 
+.languages-heading {
+  color: #ffffff;
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 2.5rem;
+}
+
 .input-container {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
   width: 100%;
   max-width: 500px;
   margin: 2rem 0;
@@ -45,14 +52,31 @@
   color: #666;
 }
 
+.info-input.error {
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.2);
+}
+
+.info-input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #e74c3c;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  text-align: left;
+}
+
 .suggestions-list {
   position: absolute;
   top: 100%;
   left: 0;
   right: 0;
-  background-color: rgba(30, 30, 30, 0.85); /* Modern browsers */
+  background-color: rgba(30, 30, 30, 0.85);
   backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px); /* Safari support */
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(45, 45, 45, 0.5);
   border-radius: 8px;
   margin-top: 0.5rem;
@@ -81,30 +105,65 @@
   background-color: rgba(45, 45, 45, 0.5);
 }
 
-.university-name {
+.language-name {
   color: #ffffff;
   font-weight: 500;
   flex: 1;
-  margin-right: 1rem;
-  text-align: left;
 }
 
-.university-flag {
+.language-flag {
   font-size: 1.5rem;
-  line-height: 1;
-  margin-left: 0.5rem;
 }
 
-.university-country {
-  color: #c0c0c0;
-  font-size: 0.9rem;
+.selected-languages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 50px;
 }
 
-.loading-indicator {
-  position: absolute;
-  right: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #c0c0c0;
-  font-size: 0.9rem;
+.language-chip {
+  display: flex;
+  align-items: center;
+  color: white;
+  padding: 0;
+  margin: 0;
+  transition: all 0.2s ease;
+  padding: 0 1rem;
+  border: none;
+  font-size: 1.1rem;
+  border: 2px solid #3d3d3d;
+  border-radius: 8px;
+  background-color: #1e1e1e;
+  color: #ffffff;
+  transition: all 0.3s ease;
+  text-align: left;
+  gap: 0.35rem;
+}
+
+.language-chip .language-name {
+  padding-right: 0.2rem;
+  margin: 0;
+}
+
+.language-chip .language-flag {
+  padding: 0;
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.language-chip .remove-language {
+  padding: 0;
+  margin: 0;
+  border: none;
+  font-size: 0.6rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #ccc;
+}
+
+.language-chip.remove-language:hover {
+  color: #f8f8f8;
 } 
