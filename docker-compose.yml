@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:80"
+    volumes:
+      - ./backend:/code
+    restart: unless-stopped
+    environment:
+      - PYTHONPATH=/code 
+  
+  frontend:
+    build:
+      context: ./website
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    volumes:
+      - ./website:/app
+      - /app/node_modules
+    restart: unless-stopped
+    depends_on:
+      - backend 
