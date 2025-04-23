@@ -2,6 +2,8 @@ import { createContext, useContext, useState } from 'react';
 
 // Define initial state
 const initialUserData = {
+  university: null,
+  major: null,
   gpa: null,
   languages: [],
   budget: null,
@@ -21,10 +23,17 @@ export function UserDataProvider({ children }) {
 
   // Function to update user data
   const updateUserData = (newData) => {
-    setUserData(prevData => ({
-      ...prevData,
-      ...newData
-    }));
+    return new Promise(resolve => {
+      setUserData(prevData => {
+        const updatedData = {
+          ...prevData,
+          ...newData
+        };
+        // Resolve with the newly updated data
+        resolve(updatedData);
+        return updatedData;
+      });
+    });
   };
 
   // Function to set the API URL
@@ -41,24 +50,65 @@ export function UserDataProvider({ children }) {
         throw new Error('No API URL provided');
       }
       
-      console.log('Sending data to API:', userData);
-      console.log(JSON.stringify(userData));
+      // Debug: Log all user data that will be sent to the API
+      console.log('Preparing to send data to API:', userData);
       
-      const response = await fetch(urlToUse, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(userData)
+      // Create a copy of userData with the correct field names for the API
+      const apiFormattedData = {
+        university: userData.university,
+        major: userData.major,
+        gpa: userData.gpa,
+        languages: userData.languages,
+        budget: userData.budget,
+        // Convert dash format to underscore format for date fields
+        start_month: userData['start-month'],
+        start_year: userData['start-year'],
+        end_month: userData['end-month'],
+        end_year: userData['end-year']
+      };
+      
+      // Log the payload that will be sent
+      console.log('API payload:', apiFormattedData);
+      
+      // Set up request using the format provided
+      const myHeaders = new Headers();
+      myHeaders.append("Content-Type", "application/json");
+      
+      const raw = JSON.stringify(apiFormattedData);
+      
+      // Log the equivalent curl command
+      console.log(`curl -X POST \\
+  "${urlToUse}" \\
+  -H "Content-Type: application/json" \\
+  -d '${raw}'`);
+      
+      const requestOptions = {
+        method: "POST",
+        headers: myHeaders,
+        body: raw,
+        redirect: "follow"
+      };
+      
+      // Use Promise-based approach as requested
+      return new Promise((resolve, reject) => {
+        fetch(urlToUse, requestOptions)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`API call failed with status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then(result => {
+            console.log('API response:', result);
+            resolve(result);
+          })
+          .catch(error => {
+            console.error('Error sending data to API:', error);
+            reject(error);
+          });
       });
-
-      if (!response.ok) {
-        throw new Error(`API call failed with status: ${response.status}`);
-      }
-
-      return await response.json();
     } catch (error) {
-      console.error('Error sending data to API:', error);
+      console.error('Error in sendDataToApi setup:', error);
       throw error;
     }
   };

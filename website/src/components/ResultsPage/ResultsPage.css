@@ -88,6 +88,9 @@
   width: 100%;
   max-width: 1400px;
   margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .universities-scroll-container {
@@ -95,6 +98,8 @@
   overflow-x: auto;
   padding: 0;
   scrollbar-width: thin;
+  scrollbar-color: #555 #1e1e1e;
+  scroll-behavior: smooth;
 }
 
 /* Custom scrollbar for webkit browsers */
@@ -108,7 +113,12 @@
 }
 
 .universities-scroll-container::-webkit-scrollbar-thumb {
+  background-color: #555;
   border-radius: 4px;
+}
+
+.universities-scroll-container::-webkit-scrollbar-thumb:hover {
+  background-color: #777;
 }
 
 .universities-list {
@@ -131,11 +141,6 @@
   border-radius: rgba(255, 255, 255, 0.2);
 }
 
-.university-card:hover {
-  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
-  scale: 1.05;
-}
-
 .university-name {
   font-size: 1.3rem;
   color: white;
@@ -148,4 +153,45 @@
   font-size: 1.1rem;
   text-align: center;
   padding: 2rem;
+}
+
+/* Pagination Controls */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 2rem;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.pagination-button {
+  background-color: #2c2c2c;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.8rem 1.5rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pagination-button:hover:not(.disabled) {
+  background-color: #3c3c3c;
+  transform: translateY(-2px);
+}
+
+.pagination-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-size: 1rem;
+  color: #ccc;
+  min-width: 150px;
+  text-align: center;
 } 

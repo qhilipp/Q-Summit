@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Button from '../Button/Button.jsx';
+import { useUserData } from '../../context/UserDataContext';
 import './UniversityInfo.css';
 
 const getFlagEmoji = (countryCode) => {
@@ -15,6 +16,7 @@ const getFlagEmoji = (countryCode) => {
 
 const UniversityInfo = () => {
   const navigate = useNavigate();
+  const { updateUserData } = useUserData();
   const [university, setUniversity] = useState('');
   const [studyField, setStudyField] = useState('');
   const [universitySuggestions, setUniversitySuggestions] = useState([]);
@@ -101,6 +103,19 @@ const UniversityInfo = () => {
   const handleUniversitySuggestionClick = (suggestion) => {
     setUniversity(suggestion.name);
     setShowUniversitySuggestions(false);
+  };
+
+  const handleContinue = async () => {
+    // Save university and major to context
+    await updateUserData({
+      university: university.trim(),
+      major: studyField.trim()
+    });
+    
+    console.log('University and major data saved:', university.trim(), studyField.trim());
+    
+    // Navigate to next page
+    navigate('/gpa');
   };
 
   const containerVariants = {
@@ -197,7 +212,7 @@ const UniversityInfo = () => {
         />
       </div>
       
-      <Button onClick={() => navigate('/gpa')}>
+      <Button onClick={handleContinue}>
         Let's go
       </Button>
     </motion.div>

@@ -5,79 +5,71 @@ import Button from '../Button/Button.jsx';
 import { useUserData } from '../../context/UserDataContext';
 import './TravelMonthsInfo.css';
 
-const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
-];
+// Import the default API URL from ResultsPage
+const DEFAULT_API_URL = 'http://localhost:8000/search_universities';
 
-const YEARS = [2024, 2025, 2026];
-
-// This can be overridden later with the actual API URL
-const DEFAULT_API_URL = 'https://api.example.com/submit-preferences';
-
-const TravelMonthsInfo = ({ apiUrl }) => {
+const TravelMonthsInfo = () => {
   const navigate = useNavigate();
-  const { updateUserData } = useUserData();
+  const { userData, updateUserData, sendDataToApi } = useUserData();
   const [startMonth, setStartMonth] = useState('');
-  const [startYear, setStartYear] = useState(2024);
+  const [startYear, setStartYear] = useState('');
   const [endMonth, setEndMonth] = useState('');
-  const [endYear, setEndYear] = useState(2024);
+  const [endYear, setEndYear] = useState('');
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Validate selections when they change
-  useEffect(() => {
-    if (startMonth && endMonth) {
-      const startDate = new Date(`${startMonth} 1, ${startYear}`);
-      const endDate = new Date(`${endMonth} 1, ${endYear}`);
+  // Generate month options
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  // Generate year options (current year + 5 years ahead)
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({length: 6}, (_, i) => (currentYear + i).toString());
+
+  // Validate date selections
+  const isValidDateSelection = () => {
+    if (!startMonth || !startYear || !endMonth || !endYear) {
+      return false;
+    }
+
+    const start = new Date(`${startMonth} 1, ${startYear}`);
+    const end = new Date(`${endMonth} 1, ${endYear}`);
+    
+    return start <= end;
+  };
+
+  // Handle continue click
+  const handleContinue = async () => {
+    if (!isValidDateSelection()) {
+      setError('Please select valid start and end dates.');
+      return;
+    }
+
+    try {
+      setLoading(true);
       
-      if (endDate < startDate) {
-        setError('End date cannot be before start date');
-      } else {
-        setError('');
-      }
+      // Update the context with the travel dates
+      await updateUserData({
+        'start-month': startMonth,
+        'start-year': startYear,
+        'end-month': endMonth,
+        'end-year': endYear
+      });
+      
+      // Navigate directly to results page (API call will happen there)
+      navigate('/results');
+    } catch (err) {
+      setError('There was a problem processing your request. Please try again.');
+      console.error('Error:', err);
+      setLoading(false);
     }
-  }, [startMonth, startYear, endMonth, endYear]);
-
-  const getMonthNumber = (monthName) => {
-    return MONTHS.indexOf(monthName) + 1;
   };
 
-  const handleContinue = () => {
-    if (!startMonth || !endMonth) {
-      setError('Please select both start and end months');
-      return;
-    }
-    
-    const startDate = new Date(`${startMonth} 1, ${startYear}`);
-    const endDate = new Date(`${endMonth} 1, ${endYear}`);
-    
-    if (endDate < startDate) {
-      setError('End date cannot be before start date');
-      return;
-    }
-    
-    // Save travel dates to context
-    updateUserData({
-      "start-month": getMonthNumber(startMonth),
-      "start-year": startYear,
-      "end-month": getMonthNumber(endMonth),
-      "end-year": endYear
-    });
-    
-    // Navigate to results page where the API call will happen
-    navigate('/results');
-  };
-
+  // Skip option
   const handleSkip = () => {
-    // Save null travel dates to context
-    updateUserData({
-      "start-month": null,
-      "start-year": null,
-      "end-month": null,
-      "end-year": null
-    });
-    
-    // Navigate to results page where the API call will happen
+    // Just navigate to results page
     navigate('/results');
   };
 
@@ -86,7 +78,7 @@ const TravelMonthsInfo = ({ apiUrl }) => {
     visible: {
       opacity: 1,
       transition: {
-        duration: 1,
+        duration: 0.8,
         when: "beforeChildren",
         staggerChildren: 0.1
       }
@@ -94,7 +86,7 @@ const TravelMonthsInfo = ({ apiUrl }) => {
   };
 
   const titleVariants = {
-    hidden: { y: 50, opacity: 0 },
+    hidden: { y: -20, opacity: 0 },
     visible: {
       y: 0,
       opacity: 1,
@@ -113,80 +105,84 @@ const TravelMonthsInfo = ({ apiUrl }) => {
       initial="hidden"
       animate="visible"
     >
-      <motion.h1 className="travel-months-heading" variants={titleVariants}>
-        When do you want to travel? (roughly)
+      <motion.h1 className="travel-heading" variants={titleVariants}>
+        When would you like to travel?
       </motion.h1>
 
-      <div className="date-pickers-container">
-        <div className="date-picker-section">
-          <h3 className="date-picker-label">Start Date</h3>
-          <div className="date-picker-wrapper">
-            <div className="select-wrapper">
-              <select 
-                className="month-select"
-                value={startMonth}
-                onChange={(e) => setStartMonth(e.target.value)}
-              >
-                <option value="">Month</option>
-                {MONTHS.map(month => (
-                  <option key={month} value={month}>{month}</option>
-                ))}
-              </select>
-            </div>
-            <div className="select-wrapper">
-              <select 
-                className="year-select"
-                value={startYear}
-                onChange={(e) => setStartYear(parseInt(e.target.value))}
-              >
-                {YEARS.map(year => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
-            </div>
+      {error && <div className="error-message">{error}</div>}
+
+      <div className="dates-container">
+        <div className="date-section">
+          <h3>Start Date</h3>
+          <div className="date-inputs">
+            <select 
+              value={startMonth} 
+              onChange={(e) => setStartMonth(e.target.value)}
+              className="month-select"
+            >
+              <option value="">Month</option>
+              {months.map(month => (
+                <option key={`start-${month}`} value={month}>{month}</option>
+              ))}
+            </select>
+            
+            <select 
+              value={startYear} 
+              onChange={(e) => setStartYear(e.target.value)}
+              className="year-select"
+            >
+              <option value="">Year</option>
+              {years.map(year => (
+                <option key={`start-${year}`} value={year}>{year}</option>
+              ))}
+            </select>
           </div>
         </div>
-
-        <div className="date-picker-section">
-          <h3 className="date-picker-label">End Date</h3>
-          <div className="date-picker-wrapper">
-            <div className="select-wrapper">
-              <select 
-                className="month-select"
-                value={endMonth}
-                onChange={(e) => setEndMonth(e.target.value)}
-              >
-                <option value="">Month</option>
-                {MONTHS.map(month => (
-                  <option key={month} value={month}>{month}</option>
-                ))}
-              </select>
-            </div>
-            <div className="select-wrapper">
-              <select 
-                className="year-select"
-                value={endYear}
-                onChange={(e) => setEndYear(parseInt(e.target.value))}
-              >
-                {YEARS.map(year => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
-            </div>
+        
+        <div className="date-section">
+          <h3>End Date</h3>
+          <div className="date-inputs">
+            <select 
+              value={endMonth} 
+              onChange={(e) => setEndMonth(e.target.value)}
+              className="month-select"
+            >
+              <option value="">Month</option>
+              {months.map(month => (
+                <option key={`end-${month}`} value={month}>{month}</option>
+              ))}
+            </select>
+            
+            <select 
+              value={endYear} 
+              onChange={(e) => setEndYear(e.target.value)}
+              className="year-select"
+            >
+              <option value="">Year</option>
+              {years.map(year => (
+                <option key={`end-${year}`} value={year}>{year}</option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
-
-      {error && <div className="error-message">{error}</div>}
       
-      <div className="button-container">
-        <Button onClick={handleContinue} className="primary-button">
-          Continue
+      <div className="buttons-container">
+        <Button 
+          onClick={handleContinue} 
+          disabled={loading || !isValidDateSelection()}
+          className={loading ? 'loading' : ''}
+        >
+          {loading ? 'Processing...' : 'Find My Universities'}
         </Button>
-        <Button onClick={handleSkip} className="skip-button">
-          <span className="top-text">Skip</span>
-          <span className="bottom-text">I'm spontaneous</span>
-        </Button>
+        
+        <button 
+          className="skip-button" 
+          onClick={handleSkip}
+          disabled={loading}
+        >
+          Skip this step
+        </button>
       </div>
     </motion.div>
   );

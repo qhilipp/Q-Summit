@@ -7,9 +7,16 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
   cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
   display: flex;
   flex-direction: column;
+}
+
+/* Add hover effects in CSS instead of JS */
+.university-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 .university-title {
@@ -27,9 +34,10 @@
 /* Image Carousel Styles */
 .image-carousel {
   position: relative;
-  height: 200px;
+  height: 220px;
   overflow: hidden;
   background-color: #151515;
+  border-radius: 12px;
 }
 
 .carousel-image-container {
@@ -38,6 +46,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  position: absolute;
 }
 
 .carousel-image {
@@ -51,32 +61,35 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6);
   color: white;
   border: none;
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  font-size: 16px;
+  font-size: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 2;
+  z-index: 5;
   opacity: 0.7;
-  transition: opacity 0.3s;
+  transition: opacity 0.3s, background-color 0.3s;
+  padding: 0;
+  line-height: 1;
 }
 
 .carousel-button:hover {
   opacity: 1;
+  background-color: rgba(0, 0, 0, 0.8);
 }
 
 .carousel-button.prev {
-  left: 10px;
+  left: 15px;
 }
 
 .carousel-button.next {
-  right: 10px;
+  right: 15px;
 }
 
 .carousel-dots {
@@ -200,11 +213,27 @@
   gap: 0.5rem;
 }
 
-.term-badge {
+/* Common chip styling for both term badges and language chips */
+.term-badge,
+.language-chip {
   font-size: 0.8rem;
-  background-color: rgba(52, 152, 219, 0.2);
-  color: #90CAF9;
-  padding: 0.2rem 0.6rem;
-  border-radius: 12px;
-  border: 1px solid rgba(52, 152, 219, 0.3);
-} 
+  background-color: #1e1e1e;
+  color: #ffffff;
+  padding: 0.25rem 0.6rem;
+  border-radius: 8px;
+  border: 2px solid #3d3d3d;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.3s ease;
+  margin: 0;
+  text-align: left;
+  height: 28px;
+}
+
+/* Term badges specific styles */
+.terms-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}

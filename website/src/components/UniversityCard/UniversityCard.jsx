@@ -3,33 +3,51 @@ import { motion } from 'framer-motion';
 import './UniversityCard.css';
 
 const UniversityCard = ({ university, onClick }) => {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  
-  // Handle image navigation
-  const nextImage = (e) => {
-    e.stopPropagation();
-    setCurrentImageIndex((prevIndex) => 
-      prevIndex === university.images.length - 1 ? 0 : prevIndex + 1
-    );
-  };
-  
-  const prevImage = (e) => {
-    e.stopPropagation();
-    setCurrentImageIndex((prevIndex) => 
-      prevIndex === 0 ? university.images.length - 1 : prevIndex - 1
-    );
+  // Function to get flag emoji for language
+  const getLanguageFlag = (language) => {
+    const languageFlags = {
+      'English': '🇬🇧',
+      'German': '🇩🇪',
+      'French': '🇫🇷',
+      'Spanish': '🇪🇸',
+      'Italian': '🇮🇹',
+      'Japanese': '🇯🇵',
+      'Chinese': '🇨🇳',
+      'Russian': '🇷🇺',
+      'Portuguese': '🇵🇹',
+      'Korean': '🇰🇷',
+      'Arabic': '🇸🇦',
+      'Dutch': '🇳🇱',
+      'Swedish': '🇸🇪',
+      'Greek': '🇬🇷',
+      'Turkish': '🇹🇷',
+      'Polish': '🇵🇱',
+      'Norwegian': '🇳🇴',
+      'Finnish': '🇫🇮',
+      'Danish': '🇩🇰'
+    };
+    
+    return languageFlags[language] || '🌐';
   };
 
-  // Format costs with currency symbol
-  const formattedCosts = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0
-  }).format(university.costs);
+  // Function to get label for ranking
+  const getRankingLabel = (ranking) => {
+    if (typeof ranking === 'number') {
+      return `#${ranking}`;
+    }
+    
+    const rankingLabels = {
+      'high': 'Top Tier',
+      'mid': 'Mid Tier',
+      'low': 'Developing'
+    };
+    
+    return rankingLabels[ranking] || ranking;
+  };
 
   // Truncate description
   const truncateDescription = (text, maxLength = 120) => {
-    if (text.length <= maxLength) return text;
+    if (!text || text.length <= maxLength) return text || '';
     return text.substr(0, maxLength) + '...';
   };
 
@@ -37,48 +55,30 @@ const UniversityCard = ({ university, onClick }) => {
     <motion.div 
       className="university-card"
       onClick={onClick}
-      whileHover={{ 
-        y: -5,
-        boxShadow: '0 8px 15px rgba(0, 0, 0, 0.2)',
-        borderColor: 'rgba(52, 152, 219, 0.5)'
-      }}
       transition={{ duration: 0.3 }}
     >
       <h3 className="university-title">{university.title}</h3>
       
       <div className="image-carousel">
-        {university.images && university.images.length > 0 ? (
-          <>
-            <div className="carousel-image-container">
-              <img 
-                src={university.images[currentImageIndex]} 
-                alt={`${university.title} - image ${currentImageIndex + 1}`} 
-                className="carousel-image"
-              />
-            </div>
-            
-            {university.images.length > 1 && (
-              <>
-                <button className="carousel-button prev" onClick={prevImage}>&#10094;</button>
-                <button className="carousel-button next" onClick={nextImage}>&#10095;</button>
-                <div className="carousel-dots">
-                  {university.images.map((_, index) => (
-                    <span 
-                      key={index} 
-                      className={`carousel-dot ${index === currentImageIndex ? 'active' : ''}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCurrentImageIndex(index);
-                      }}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-          </>
+        {university.image ? (
+          <div className="carousel-image-container">
+            <img 
+              src={university.image} 
+              alt={university.title} 
+              className="carousel-image"
+            />
+          </div>
+        ) : university.images && university.images.length > 0 ? (
+          <div className="carousel-image-container">
+            <img 
+              src={university.images[0]} 
+              alt={university.title} 
+              className="carousel-image"
+            />
+          </div>
         ) : (
           <div className="placeholder-image">
-            <span>No Images Available</span>
+            <span>No Image Available</span>
           </div>
         )}
       </div>
@@ -88,17 +88,12 @@ const UniversityCard = ({ university, onClick }) => {
           <div className="stat">
             <span className="stat-icon">🏆</span>
             <span className="stat-label">Ranking</span>
-            <span className="stat-value">#{university.ranking}</span>
+            <span className="stat-value">{getRankingLabel(university.ranking)}</span>
           </div>
           <div className="stat">
             <span className="stat-icon">👨‍🎓</span>
             <span className="stat-label">Students</span>
             <span className="stat-value">{university.student_count.toLocaleString()}</span>
-          </div>
-          <div className="stat">
-            <span className="stat-icon">📊</span>
-            <span className="stat-label">Min GPA</span>
-            <span className="stat-value">{university.gpa.toFixed(1)}</span>
           </div>
         </div>
         
@@ -106,22 +101,24 @@ const UniversityCard = ({ university, onClick }) => {
         
         <div className="university-meta">
           <div className="meta-item">
-            <span className="meta-label">Terms</span>
+            <span className="meta-label">Languages</span>
             <div className="terms-list">
-              {university.terms.map((term, index) => (
-                <span key={index} className="term-badge">{term}</span>
-              ))}
+              {university.languages ? (
+                // New format - array of languages
+                university.languages.map((lang, index) => (
+                  <span key={index} className="term-badge">
+                    {lang} {getLanguageFlag(lang)}
+                  </span>
+                ))
+              ) : university.language ? (
+                // Old format - single language
+                <span className="language-chip">
+                  {university.language} {getLanguageFlag(university.language)}
+                </span>
+              ) : (
+                <span className="language-chip">Not specified</span>
+              )}
             </div>
-          </div>
-          
-          <div className="meta-item">
-            <span className="meta-label">Language</span>
-            <span className="meta-value">{university.language}</span>
-          </div>
-          
-          <div className="meta-item costs">
-            <span className="meta-label">Costs</span>
-            <span className="costs-value">{formattedCosts}</span>
           </div>
         </div>
       </div>
