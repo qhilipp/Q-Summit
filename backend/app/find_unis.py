@@ -1,4 +1,5 @@
 import os
+import secrets
 from dataclasses import dataclass
 from typing import List
 
@@ -11,9 +12,9 @@ from langchain_openai import AzureChatOpenAI
 
 # Initialize the language model
 llm = AzureChatOpenAI(
-    deployment_name=os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"],
-    openai_api_key=os.environ["AZURE_OPENAI_API_KEY"],
-    azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+    deployment_name=secrets.AZURE_OPENAI_DEPLOYMENT_NAME,
+    openai_api_key=secrets.AZURE_OPENAI_API_KEY,
+    azure_endpoint=secrets.AZURE_OPENAI_ENDPOINT,
     openai_api_version="2023-05-15",
 )
 
