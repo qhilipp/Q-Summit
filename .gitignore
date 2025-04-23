@@ -3,3 +3,5 @@
 **/node_modules
 **/exploration
 **/secrets_.py
+**/venv
+**app/secrets_.py

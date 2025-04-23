@@ -8,3 +8,8 @@ typing-extensions>=4.7.1
 faiss-cpu
 googlesearch-python
 bs4
+pywin32>=306
+icalendar>=5.0.11
+pytz>=2024.1
+requests>=2.31.0
+python-dateutil>=2.8.2
