@@ -9,7 +9,7 @@ Many students spend countless hours scouring university websites for relevant in
 2. **Save Time**: Our platform aggregates relevant information, allowing users to quickly find suitable programs and deadlines.
 
 ## Features
-![](./assets/x.gif) 
+![](./assets/Bring_me_Aibroad_preview.gif) 
 
 1. **Guided Search**:
 Users answer a few required questions about their target university and study program to personalize the search results.
