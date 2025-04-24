@@ -10,6 +10,8 @@ from langchain.prompts import ChatPromptTemplate
 from langchain_openai import AzureChatOpenAI
 from requests.exceptions import RequestException, Timeout
 
+
+# LLM initialization
 llm = AzureChatOpenAI(
     deployment_name=secrets_.AZURE_OPENAI_DEPLOYMENT_NAME,
     openai_api_key=secrets_.AZURE_OPENAI_API_KEY,
@@ -20,20 +22,25 @@ llm = AzureChatOpenAI(
 
 @dataclass
 class Quote:
+    """Represents a quote or excerpt from a university experience blog post.
+
+    Attributes:
+        quote (str): The exact text of the quote or excerpt.
+        source_link (str): The URL of the blog post where the quote was found.
+    """
     quote: str
     source_link: str
 
 
 def get_quotes_from_blog(text: str, link: str) -> List[Quote]:
-    """
-    Get most interesting quotes from a blog post about university experiences.
+    """Extract interesting quotes from a blog post about university experiences.
 
     Args:
-        text: The text content of the blog post
-        link: The URL of the blog post
+        text (str): The text content of the blog post.
+        link (str): The URL of the blog post.
 
     Returns:
-        A list of Quote objects containing interesting excerpts
+        List[Quote]: A list of Quote objects containing interesting excerpts from the blog post.
     """
     template = """
     Extract the 3-5 most interesting quotes or excerpts from this blog post about university experiences.
@@ -71,25 +78,17 @@ def get_quotes_from_blog(text: str, link: str) -> List[Quote]:
         print(f"LLM error while processing quotes: {e}")
         return []
 
-    # Process the returned JSON
     import json
-
     try:
-        # The LLM might wrap the response in ```json and ``` or other formatting
         response_text = result.content.strip()
         if "```" in response_text:
-            # Extract content between code blocks
             response_text = response_text.split("```")[1]
             if response_text.startswith("json"):
                 response_text = response_text[4:].strip()
-
-        # Parse the JSON
         quotes_data = json.loads(response_text)
-
-        # Convert to Quote objects
         quotes = [Quote(quote=quote["text"], source_link=link) for quote in quotes_data]
-
         return quotes
+    
     except json.JSONDecodeError as e:
         print(f"Error parsing LLM response: {e}")
         print(f"Response was: {response_text}")
@@ -98,26 +97,27 @@ def get_quotes_from_blog(text: str, link: str) -> List[Quote]:
 
 @dataclass
 class UniversityDetails:
+    """Holds detailed information about a university, including student quotes.
+
+    Attributes:
+        quotes (List[Quote]): A list of quotes or excerpts related to the university.
+    """
     quotes: List[Quote]
 
 
 def get_uni_details(university_name: str) -> UniversityDetails:
-    """
-    Get detailed information about a university by googling, scraping, and postprocessing relevant pages.
+    """Retrieve detailed information about a university by searching, scraping, and analyzing relevant blog posts.
 
     Args:
-        university_name: The name of the university to search for
+        university_name (str): The name of the university to search for.
 
     Returns:
-        UniversityDetails object containing quotes
+        UniversityDetails: An object containing a list of quotes about student experiences at the university.
     """
-    # Search queries
     query = f"{university_name} student experience blog article post"
     all_quotes = []
 
-    # Process each search query
     try:
-        # Get search results with timeout
         search_results: List[SearchResult] = google(query)
     except Exception as e:
         print(f"Error during Google search for '{query}': {e}")
@@ -128,20 +128,14 @@ def get_uni_details(university_name: str) -> UniversityDetails:
             break
 
         try:
-            # Ensure we have a valid URL - use url attribute from SearchResult
             if not hasattr(result, "url") or not result.url:
                 continue
-
-            # Scrape text from the URL with timeout
             scraped_text = scrape_text_from_url(result.url)
 
-            # Skip if we couldn't get useful text
             if not scraped_text or len(scraped_text) < 200:
                 continue
-
             sites_processed += 1
 
-            # Process for quotes based on the query type
             if (
                 "experience" in query.lower()
                 or "stories" in query.lower()
@@ -156,21 +150,15 @@ def get_uni_details(university_name: str) -> UniversityDetails:
             )
             continue
 
-    # Create and return UniversityDetails object
     return UniversityDetails(quotes=all_quotes)
 
 
 if __name__ == "__main__":
     import sys
-
-    # Get university name from command line or use default
     uni_name = sys.argv[1] if len(sys.argv) > 1 else "Stanford University"
-
     print(f"Fetching details for: {uni_name}")
     try:
         details = get_uni_details(uni_name)
-
-        # Print quotes
         print("\n===== STUDENT QUOTES =====")
         if details.quotes:
             for i, quote in enumerate(details.quotes, 1):
@@ -182,5 +170,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error fetching university details: {e}")
         import traceback
-
         traceback.print_exc()
