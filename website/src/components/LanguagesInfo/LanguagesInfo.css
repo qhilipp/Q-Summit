@@ -120,49 +120,49 @@
   gap: 0.75rem;
   width: 100%;
   min-height: 50px;
+  padding: 0.25rem;
 }
 
 .language-chip {
   display: flex;
   align-items: center;
-  color: white;
-  padding: 0;
-  margin: 0;
-  transition: all 0.2s ease;
-  padding: 0 1rem;
-  border: none;
-  font-size: 1.1rem;
+  padding: 0.5rem 1rem;
   border: 2px solid #3d3d3d;
   border-radius: 8px;
   background-color: #1e1e1e;
   color: #ffffff;
-  transition: all 0.3s ease;
-  text-align: left;
+  transition: border-color 0.3s ease;
   gap: 0.35rem;
+  will-change: transform;
+}
+
+.language-chip:hover {
+  border-color: #4d4d4d;
 }
 
 .language-chip .language-name {
-  padding-right: 0.2rem;
-  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
 }
 
 .language-chip .language-flag {
-  padding: 0;
-  margin: 0;
   font-size: 1.2rem;
+  line-height: 1;
 }
 
 .language-chip .remove-language {
-  padding: 0;
-  margin: 0;
+  background: none;
   border: none;
-  font-size: 0.6rem;
-  font-weight: bold;
+  color: #999;
+  font-size: 1.2rem;
   cursor: pointer;
-  transition: all 0.2s ease;
-  color: #ccc;
+  padding: 0.1rem 0.3rem;
+  margin-left: 0.1rem;
+  border-radius: 4px;
+  line-height: 1;
+  will-change: transform;
 }
 
-.language-chip.remove-language:hover {
-  color: #f8f8f8;
+.language-chip .remove-language:hover {
+  color: #fff;
 } 

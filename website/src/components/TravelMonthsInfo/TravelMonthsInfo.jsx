@@ -106,7 +106,7 @@ const TravelMonthsInfo = () => {
       animate="visible"
     >
       <motion.h1 className="travel-heading" variants={titleVariants}>
-        When would you like to travel?
+        When would you like to travel? (roughly)
       </motion.h1>
 
       {error && <div className="error-message">{error}</div>}
@@ -176,13 +176,14 @@ const TravelMonthsInfo = () => {
           {loading ? 'Processing...' : 'Find My Universities'}
         </Button>
         
-        <button 
-          className="skip-button" 
-          onClick={handleSkip}
+        <Button 
+          onClick={handleSkip} 
           disabled={loading}
+          className="skip-button"
         >
-          Skip this step
-        </button>
+          <span className="top-text">Skip</span>
+          <span className="bottom-text">I'm flexible</span>
+        </Button>
       </div>
     </motion.div>
   );

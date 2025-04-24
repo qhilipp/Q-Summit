@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import Button from '../Button/Button.jsx';
@@ -148,13 +148,43 @@ const LanguagesInfo = () => {
 
       <div className="input-container">
         <div className="selected-languages">
-          {selectedLanguages.map((lang, index) => (
-            <div key={index} className="language-chip">
-              <span className="language-name">{lang.name}</span>
-              <span className="language-flag">{lang.flag}</span>
-              <button className="remove-language" onClick={() => handleRemoveLanguage(lang)}>X</button>
-            </div>
-          ))}
+          <AnimatePresence>
+            {selectedLanguages.map((lang, index) => (
+              <motion.div
+                key={lang.name}
+                className="language-chip"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ 
+                  scale: 1, 
+                  opacity: 1,
+                  transition: {
+                    type: "spring",
+                    stiffness: 500,
+                    damping: 25
+                  }
+                }}
+                exit={{ 
+                  scale: 0, 
+                  opacity: 0,
+                  transition: {
+                    duration: 0.2
+                  }
+                }}
+                layout
+              >
+                <span className="language-name">{lang.name}</span>
+                <span className="language-flag">{lang.flag}</span>
+                <motion.button 
+                  className="remove-language" 
+                  onClick={() => handleRemoveLanguage(lang)}
+                  whileHover={{ scale: 1.2 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  ×
+                </motion.button>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
 
         <div className="input-wrapper" ref={suggestionsRef}>

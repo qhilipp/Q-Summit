@@ -57,7 +57,7 @@
 
 .month-select,
 .year-select {
-  padding: 1rem;
+  padding: 1.2rem;
   font-size: 1.1rem;
   border: 2px solid #3d3d3d;
   border-radius: 8px;
@@ -66,6 +66,14 @@
   transition: all 0.3s ease;
   flex: 1;
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.2em;
+  padding-right: 2.5rem;
 }
 
 .month-select:focus,
@@ -75,38 +83,76 @@
   box-shadow: 0 0 0 2px rgba(94, 221, 212, 0.2);
 }
 
+.month-select::placeholder,
+.year-select::placeholder {
+  color: #666;
+}
+
+.month-select option,
+.year-select option {
+  background-color: #1e1e1e;
+  color: #ffffff;
+  padding: 1rem;
+}
+
 .buttons-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 1rem;
+  margin-top: 1rem;
   width: 100%;
   max-width: 500px;
+}
+
+.welcome-button {
+  width: 100%;
+}
+
+.skip-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  color: white;
+  border: 2px solid transparent !important;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  background-color: transparent !important;
+  color: #fff;
+  text-decoration: none;
+  transform: none;
+}
+
+.skip-button:hover {
+  border-color: #333 !important;
+  text-decoration: none !important;
+  transform: none !important;
+  background-color: transparent !important;
+  scale: 1 !important;
+  box-shadow: none !important;
+}
+
+.skip-button .top-text {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.skip-button .bottom-text {
+  font-weight: 450;
+  font-size: 0.7rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.skip-button:hover .bottom-text {
+  opacity: 0.5;
 }
 
 .button.loading {
   background-color: #444;
   cursor: not-allowed;
-}
-
-.skip-button {
-  background: none;
-  border: none;
-  color: #aaa;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: color 0.3s ease;
-}
-
-.skip-button:hover {
-  color: #fff;
-  text-decoration: underline;
-}
-
-.skip-button:disabled {
-  color: #555;
-  cursor: not-allowed;
-  text-decoration: none;
 }
 
 @media (max-width: 600px) {

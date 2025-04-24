@@ -101,12 +101,12 @@ const BudgetInfo = () => {
       </div>
       
       <div className="button-container">
-        <Button onClick={handleContinue} className="primary-button">
+        <Button onClick={handleContinue} className="welcome-button">
           Continue
         </Button>
         <Button onClick={handleSkip} className="skip-button">
-          <span class="top-text">Skip</span>
-          <span class="bottom-text">I don't care about $$$</span>
+          <span className="top-text">Skip</span>
+          <span className="bottom-text">I don't care about $$$</span>
         </Button>
       </div>
     </motion.div>
