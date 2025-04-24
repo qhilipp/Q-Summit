@@ -12,7 +12,7 @@ Many students spend countless hours scouring university websites for relevant in
 ![](./assets/Bring_me_Aibroad_preview.gif) 
 
 1. **Guided Search**:
-Users answer a few required questions about their target university and study program to personalize the search results.
+Users answer a few required questions about their home university and study program to personalize the search results.
 2. **Optional Filters**:
 Users can optionally provide their GPA and budget to further tailor the recommendations.
 3. **Relevant University Matches**:
