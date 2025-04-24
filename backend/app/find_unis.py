@@ -140,7 +140,7 @@ def find_partner_universities_from_results(
     if not search_results:
         return "No search results provided."
 
-    relevant_results = [r for r in search_results if is_relevant_search_result(r)][:3]
+    relevant_results = [r for r in search_results if is_relevant_search_result(r)][:4]
 
     if not relevant_results:
         return "No relevant search results found for partner universities."
@@ -228,9 +228,13 @@ def get_university_base_url(university_name: str) -> str:
 
     prompt = ChatPromptTemplate.from_template(template)
     chain = prompt | llm
-    result = chain.invoke({"university_name": university_name})
-    url = result.content.strip().replace('"', "").replace("'", "")
-    return url
+    try:
+        result = chain.invoke({"university_name": university_name})
+        url = result.content.strip().replace('"', "").replace("'", "")
+        return url
+    except Exception as e:
+        print(f"Error getting university base URL: {str(e)}")
+        return ""
 
 
 def filter_partner_universities(
