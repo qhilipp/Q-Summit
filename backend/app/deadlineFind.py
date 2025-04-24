@@ -1,5 +1,4 @@
 import os
-import time
 import datetime
 from dataclasses import dataclass
 from functools import lru_cache
@@ -13,7 +12,6 @@ from langchain_community.tools import Tool
 from langchain_openai import AzureChatOpenAI
 from langgraph.graph import END, StateGraph
 from typing_extensions import TypedDict
-import win32com.client
 from icalendar import Calendar, Event
 import pytz
 from secrets_ import AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_DEPLOYMENT_NAME
@@ -237,21 +235,12 @@ def find_application_deadline(home_university: str, foreign_university: str,
     return None
 
 
-def add_to_outlook_calendar(deadline_info: DeadlineInfo) -> bool:
+def generate_calendar_file(deadline_info: DeadlineInfo) -> Dict[str, Any]:
     """
-    Add a calendar entry directly to Microsoft Outlook 365 using win32com.client.
+    Generate an iCalendar file for the application deadline.
+    Returns a dictionary with the calendar data and filename.
     """
     try:
-        # Initialize Outlook 365
-        outlook = win32com.client.Dispatch("Outlook.Application")
-        namespace = outlook.GetNamespace("MAPI")
-        
-        # Get the default calendar folder
-        calendar = namespace.GetDefaultFolder(9)  # 9 represents the calendar folder
-        
-        # Create appointment using the modern method
-        appointment = calendar.Items.Add(1)  # 1 represents an appointment item
-
         # Parse deadline date
         deadline_date = None
         try:
@@ -277,18 +266,34 @@ def add_to_outlook_calendar(deadline_info: DeadlineInfo) -> bool:
             years_added += 1
             deadline_date = deadline_date.replace(year=deadline_date.year + 1)
 
-        # Set appointment details
+        # Create a calendar
+        cal = Calendar()
+        cal.add('prodid', '-//Q-Summit Application Deadline Finder//qsummit.org//')
+        cal.add('version', '2.0')
+        
+        # Create an event
+        event = Event()
+        
+        # Set event properties
         summary = f"Application Deadline: {deadline_info.program_type} - {deadline_info.foreign_university}"
         if years_added > 0:
             summary += f" (Adjusted {years_added} year{'s' if years_added > 1 else ''} forward)"
-
-        # Set modern Outlook 365 appointment properties
-        appointment.Subject = summary
-        appointment.Start = deadline_date
-        appointment.End = deadline_date + datetime.timedelta(hours=1)  # 1 hour duration
-        appointment.Location = "Online Application"
+            
+        event.add('summary', summary)
         
-        # Set description with rich text support
+        # Set timezone-aware datetime
+        utc = pytz.UTC
+        start_time = datetime.datetime.combine(deadline_date.date(), datetime.time(9, 0))
+        end_time = datetime.datetime.combine(deadline_date.date(), datetime.time(10, 0))
+        
+        # Add timezone
+        start_time = utc.localize(start_time)
+        end_time = utc.localize(end_time)
+        
+        event.add('dtstart', start_time)
+        event.add('dtend', end_time)
+        
+        # Set description
         description = f"""
         Application deadline for {deadline_info.program_type} program
         Home University: {deadline_info.home_university}
@@ -301,29 +306,240 @@ def add_to_outlook_calendar(deadline_info: DeadlineInfo) -> bool:
         if years_added > 0:
             description += f"""
             
-            ** WARNING: The original deadline was in the past. This calendar entry 
+            WARNING: The original deadline was in the past. This calendar entry 
             has been adjusted {years_added} year{'s' if years_added > 1 else ''} forward to a future cycle. 
-            The actual deadline may differ - please verify with the university. **
+            The actual deadline may differ - please verify with the university.
             """
+            
+        event.add('description', description)
         
-        appointment.Body = description
-
-        # Set reminder for one month before (Outlook 365 compatible)
-        appointment.ReminderSet = True
-        appointment.ReminderMinutesBeforeStart = 43200  # 30 days in minutes
-
-        # Save the appointment
-        appointment.Save()
+        # Add location
+        event.add('location', 'Online Application')
         
-        print(f"Successfully added calendar entry: {summary}")
+        # Add reminder (alarm) - 30 days before
+        alarm = Event()
+        alarm.add('action', 'DISPLAY')
+        alarm.add('description', f"Reminder: {summary}")
+        alarm.add('trigger', datetime.timedelta(days=-30))
+        event.add_component(alarm)
+
+        # Add unique ID for the event
+        import uuid
+        event['uid'] = str(uuid.uuid4())
+        
+        # Add the event to the calendar
+        cal.add_component(event)
+        
+        # Generate calendar data
+        calendar_data = cal.to_ical().decode('utf-8')
+        
+        # Generate a filename
+        safe_uni_name = ''.join(c if c.isalnum() else '_' for c in deadline_info.foreign_university)
+        filename = f"application_deadline_{safe_uni_name}.ics"
+        
+        print(f"Successfully generated calendar file: {filename}")
         if years_added > 0:
             print(f"Note: Deadline was in the past and has been adjusted {years_added} year{'s' if years_added > 1 else ''} forward to the next cycle.")
         else:
             print("Note: Current deadline used (already in the future).")
-        return True
+            
+        # Generate calendar URLs for popular calendar services
+        google_cal_url = generate_google_calendar_url(event)
+        outlook_web_url = generate_outlook_web_url(event)
+            
+        return {
+            "success": True,
+            "filename": filename,
+            "calendar_data": calendar_data,
+            "summary": summary,
+            "years_adjusted": years_added,
+            "google_calendar_url": google_cal_url,
+            "outlook_web_url": outlook_web_url,
+            "event": event
+        }
     except Exception as e:
-        print(f"Error adding to Outlook calendar: {str(e)}")
+        print(f"Error generating calendar file: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
+def generate_google_calendar_url(event) -> str:
+    """
+    Generate a URL that will create an event in Google Calendar.
+    """
+    try:
+        # Extract event details
+        summary = event.get('summary', 'Application Deadline')
+        start_time = event.get('dtstart').dt
+        end_time = event.get('dtend').dt
+        description = event.get('description', '')
+        location = event.get('location', 'Online')
+        
+        # Format dates for Google Calendar URL
+        start_str = start_time.strftime('%Y%m%dT%H%M%SZ') if isinstance(start_time, datetime.datetime) else f"{start_time.strftime('%Y%m%d')}"
+        end_str = end_time.strftime('%Y%m%dT%H%M%SZ') if isinstance(end_time, datetime.datetime) else f"{end_time.strftime('%Y%m%d')}"
+        
+        # Create URL parameters
+        import urllib.parse
+        params = {
+            'action': 'TEMPLATE',
+            'text': summary,
+            'dates': f"{start_str}/{end_str}",
+            'details': description,
+            'location': location,
+        }
+        
+        # Build the URL
+        base_url = "https://calendar.google.com/calendar/render"
+        query_string = urllib.parse.urlencode(params)
+        google_url = f"{base_url}?{query_string}"
+        
+        return google_url
+    except Exception as e:
+        print(f"Error generating Google Calendar URL: {str(e)}")
+        return ""
+
+
+def generate_outlook_web_url(event) -> str:
+    """
+    Generate a URL that will create an event in Outlook Web Calendar.
+    """
+    try:
+        # Extract event details
+        summary = event.get('summary', 'Application Deadline')
+        start_time = event.get('dtstart').dt
+        end_time = event.get('dtend').dt
+        description = event.get('description', '')
+        location = event.get('location', 'Online')
+        
+        # Format dates for Outlook Web URL
+        start_str = start_time.strftime('%Y-%m-%dT%H:%M:%S') if isinstance(start_time, datetime.datetime) else f"{start_time.strftime('%Y-%m-%d')}T00:00:00"
+        end_str = end_time.strftime('%Y-%m-%dT%H:%M:%S') if isinstance(end_time, datetime.datetime) else f"{end_time.strftime('%Y-%m-%d')}T00:00:00"
+        
+        # Create URL parameters
+        import urllib.parse
+        params = {
+            'path': '/calendar/action/compose',
+            'rru': 'addevent',
+            'subject': summary,
+            'startdt': start_str,
+            'enddt': end_str,
+            'body': description,
+            'location': location,
+        }
+        
+        # Build the URL
+        base_url = "https://outlook.office.com/calendar/0/action/compose"
+        query_string = urllib.parse.urlencode(params)
+        outlook_url = f"{base_url}?{query_string}"
+        
+        return outlook_url
+    except Exception as e:
+        print(f"Error generating Outlook Web URL: {str(e)}")
+        return ""
+
+
+def send_calendar_invitation_email(deadline_info: DeadlineInfo, recipient_email: str) -> bool:
+    """
+    Send an email with calendar invitation attached.
+    This method requires an SMTP server configuration.
+    """
+    try:
+        # Generate calendar file
+        calendar_result = generate_calendar_file(deadline_info)
+        if not calendar_result.get("success", False):
+            return False
+            
+        # Calendar data
+        calendar_data = calendar_result.get("calendar_data", "")
+        summary = calendar_result.get("summary", "Application Deadline")
+        
+        # Import email modules
+        import smtplib
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+        from email.mime.base import MIMEBase
+        from email import encoders
+        
+        # This would need to be configured in your application settings
+        # For now, using placeholder values
+        smtp_server = os.environ.get("SMTP_SERVER", "smtp.example.com")
+        smtp_port = int(os.environ.get("SMTP_PORT", 587))
+        smtp_username = os.environ.get("SMTP_USERNAME", "user@example.com")
+        smtp_password = os.environ.get("SMTP_PASSWORD", "password")
+        sender_email = os.environ.get("SENDER_EMAIL", "noreply@qsummit.org")
+        
+        # Create message
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = recipient_email
+        msg['Subject'] = f"Calendar Invitation: {summary}"
+        
+        # Email body
+        body = f"""
+        Hello,
+        
+        Attached is a calendar invitation for your application deadline:
+        
+        {summary}
+        
+        You can add this to your calendar by opening the attached .ics file.
+        
+        Regards,
+        Q-Summit Application Deadline Finder
+        """
+        msg.attach(MIMEText(body, 'plain'))
+        
+        # Attachment
+        attachment = MIMEBase('text', 'calendar', method="REQUEST", name=calendar_result.get("filename"))
+        attachment.set_payload(calendar_data)
+        encoders.encode_base64(attachment)
+        attachment.add_header('Content-Disposition', f'attachment; filename="{calendar_result.get("filename")}"')
+        attachment.add_header('Content-Type', 'text/calendar; charset="utf-8"; method=REQUEST')
+        msg.attach(attachment)
+        
+        # Connect to SMTP server (this is just example code, would need real credentials)
+        try:
+            server = smtplib.SMTP(smtp_server, smtp_port)
+            server.starttls()
+            server.login(smtp_username, smtp_password)
+            server.send_message(msg)
+            server.quit()
+            return True
+        except Exception as e:
+            print(f"SMTP server error: {str(e)}")
+            # Don't fail the whole function if SMTP fails, just log it
+            return False
+            
+    except Exception as e:
+        print(f"Error sending calendar invitation email: {str(e)}")
         return False
+
+
+# Replace the Outlook-specific function with the platform-independent version
+def add_to_outlook_calendar(deadline_info: DeadlineInfo) -> Dict[str, Any]:
+    """
+    Platform-independent calendar handler for a web application.
+    Returns dictionary with calendar data and direct add URLs.
+    """
+    try:
+        # Generate the calendar file
+        calendar_result = generate_calendar_file(deadline_info)
+        
+        # Return the calendar data and URLs
+        return {
+            "success": calendar_result.get("success", False),
+            "ics_data": calendar_result.get("calendar_data", ""),
+            "filename": calendar_result.get("filename", ""),
+            "google_calendar_url": calendar_result.get("google_calendar_url", ""),
+            "outlook_web_url": calendar_result.get("outlook_web_url", ""),
+            "summary": calendar_result.get("summary", "")
+        }
+    except Exception as e:
+        print(f"Error processing calendar data: {str(e)}")
+        return {"success": False, "error": str(e)}
 
 
 # LangGraph agent implementation
@@ -566,5 +782,61 @@ if __name__ == "__main__":
         "program_type": "overseas"
     }
     
-    result = find_and_add_deadline(sample_input)
-    print(result)
+    # Test methods
+    def test_calendar_generation():
+        """Test calendar generation features locally"""
+        print("Testing calendar generation features...")
+        
+        # Create a sample deadline info
+        deadline_info = DeadlineInfo(
+            home_university="University of Münster",
+            foreign_university="University of Santa Barbara",
+            program_type="overseas",
+            deadline_date="2025-03-15",
+            deadline_description="Application for Fall Semester",
+            source_url="https://example.com/deadlines"
+        )
+        
+        # Generate calendar file and URLs
+        cal_result = add_to_outlook_calendar(deadline_info)
+        
+        if cal_result["success"]:
+            print("\n✅ Successfully generated calendar data!")
+            print(f"Summary: {cal_result['summary']}")
+            print("\n🔗 Calendar Add URLs:")
+            print(f"Google Calendar: {cal_result['google_calendar_url']}")
+            print(f"Outlook Web: {cal_result['outlook_web_url']}")
+            
+            # Save the ICS file locally for testing
+            ics_path = f"test_{cal_result['filename']}"
+            with open(ics_path, "w") as f:
+                f.write(cal_result["ics_data"])
+            print(f"\n💾 Saved calendar file to {ics_path}")
+            print(f"You can open this file with your calendar application to test the import")
+            
+            # Test sending email
+            email = input("\n📧 Enter an email to send a calendar invitation (or press Enter to skip): ")
+            if email and "@" in email:
+                print(f"Sending calendar invitation to {email}...")
+                success = send_calendar_invitation_email(deadline_info, email)
+                if success:
+                    print("✅ Email sent successfully!")
+                else:
+                    print("❌ Failed to send email. Check SMTP settings and try again.")
+            else:
+                print("Email sending skipped.")
+        else:
+            print(f"❌ Calendar generation failed: {cal_result.get('error', 'Unknown error')}")
+    
+    # Choose what to test
+    print("Select a test option:")
+    print("1. Find deadline and add to calendar (original test)")
+    print("2. Test calendar generation features")
+    choice = input("Enter your choice (1 or 2): ")
+    
+    if choice == "2":
+        test_calendar_generation()
+    else:
+        # Run the original test
+        result = find_and_add_deadline(sample_input)
+        print(result)
