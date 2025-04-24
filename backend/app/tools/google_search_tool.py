@@ -3,7 +3,6 @@ import os
 import re
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Union
-
 import secrets_
 from googlesearch import search
 from langchain.agents import Tool, initialize_agent
@@ -14,6 +13,8 @@ from langchain_core.tools import StructuredTool
 from langchain_openai import AzureChatOpenAI
 from pydantic import BaseModel, Field
 
+
+# LLM initialization
 llm = AzureChatOpenAI(
     deployment_name=secrets_.AZURE_OPENAI_DEPLOYMENT_NAME,
     openai_api_key=secrets_.AZURE_OPENAI_API_KEY,
@@ -23,6 +24,12 @@ llm = AzureChatOpenAI(
 
 
 class GoogleSearchSchema(BaseModel):
+    """Schema for Google search queries with optional filtering.
+
+    Attributes:
+        query (str): The search query to use for Google search.
+        filter_query (Optional[str]): Additional query terms to use for filtering results.
+    """
     query: str = Field(..., description="The search query to use for Google search")
     filter_query: Optional[str] = Field(
         None, description="Additional query terms to use for filtering results"
@@ -32,6 +39,16 @@ class GoogleSearchSchema(BaseModel):
 
     @classmethod
     def model_validate(cls, obj, *args, **kwargs):
+        """Validate and normalize input data for the schema.
+
+        Args:
+            obj (dict): Input data to validate.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            GoogleSearchSchema: Validated schema instance.
+        """
         if isinstance(obj, dict):
             # Handle when query is a dict from LangChain
             if (
@@ -40,7 +57,6 @@ class GoogleSearchSchema(BaseModel):
                 and "description" in obj["query"]
             ):
                 obj["query"] = obj["query"]["description"]
-
             # Handle when filter_query is a dict
             if (
                 "filter_query" in obj
@@ -53,56 +69,45 @@ class GoogleSearchSchema(BaseModel):
 
 
 def google_search_with_filter(query: str, filter_query: str = None) -> List[Dict]:
-    """
-    Perform a Google search using the query and filter results based on relevance.
+    """Perform a Google search and optionally filter results for high relevance.
 
     Args:
-        query: The search query to use for Google search
-        filter_query: Additional query terms to use for filtering results
+        query (str): The search query to use for Google search.
+        filter_query (Optional[str]): Additional query terms to use for filtering results.
 
     Returns:
-        List of dictionaries with filtered search results
+        List[dict]: A list of dictionaries with filtered search results, each containing:
+            - 'title': Title of the result (str)
+            - 'url': URL of the result (str)
+            - 'snippet': Snippet or short description (str)
     """
-    # Handle case where query is a dict instead of a string (occurs in some LangChain outputs)
     if isinstance(query, dict) and "description" in query:
         query = query["description"]
     elif isinstance(query, dict) and "query" in query:
         query = query["query"]
 
-    # Handle filter_query similarly
     if isinstance(filter_query, dict) and "description" in filter_query:
         filter_query = filter_query["description"]
-
-    # Get search results from Google - these are returned as strings (URLs)
     search_results = list(search(query, num_results=9))
-
-    # Create result objects with available information
     formatted_results = []
+    
     for url in search_results:
-        # Extract a simple title from the URL
         title = url.split("/")[-1].replace("-", " ").replace("_", " ")
         if not title or title.endswith((".html", ".htm", ".php", ".asp")):
-            # Use domain if path is empty or ends with file extension
             domain = url.split("/")[2]
             title = f"Result from {domain}"
-
-        # Create a result object with the URL as both title and snippet for now
         formatted_results.append(
             {
                 "title": title,
                 "url": url,
-                "snippet": f"URL: {url}",  # Use URL as snippet since we don't have actual snippets
+                "snippet": f"URL: {url}",
             }
         )
 
-    # If no filter query provided, return all results
     if not filter_query:
         return formatted_results
-
-    # Filter results based on relevance to filter_query
     filtered_results = []
 
-    # Use LLM to determine relevance with a much stricter prompt
     template = """
     You are an expert at evaluating search results for study abroad applications. 
     
@@ -130,9 +135,9 @@ def google_search_with_filter(query: str, filter_query: str = None) -> List[Dict
 
     prompt = ChatPromptTemplate.from_template(template)
     chain = prompt | llm
-
     target_university = ""
     match = re.search(r'"([^"]*)".*"([^"]*)"', query)
+    
     if match:
         # Assuming second quoted term is the target university
         target_university = match.group(2)
@@ -153,19 +158,14 @@ def google_search_with_filter(query: str, filter_query: str = None) -> List[Dict
         except Exception as e:
             print(f"Error evaluating result {result['title']}: {str(e)}")
 
-    # Double-check for relevance based on URL patterns that indicate official sources
     if target_university:
         for result in formatted_results:
-            # Skip if already included
             if any(r["url"] == result["url"] for r in filtered_results):
                 continue
-
-            # Check if URL is from an official university domain or education authority
             url_lower = result["url"].lower()
             target_uni_words = [
                 w.lower() for w in target_university.split() if len(w) > 2
             ]
-
             # If URL contains university domain patterns and target university keywords
             if (
                 (
