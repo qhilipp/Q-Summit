@@ -162,7 +162,7 @@ const UniversityPage = () => {
                   <div className="details-stat-item">
                     <span className="details-stat-icon">🏆</span>
                     <span className="details-stat-label">Ranking</span>
-                    <span className={`details-stat-value ${getRankingClass(universityData?.ranking)}`}>
+                    <span className={`details-rating-chip ${universityData?.ranking}`}>
                       {getRankingLabel(universityData?.ranking)}
                     </span>
                   </div>
@@ -207,6 +207,7 @@ const UniversityPage = () => {
             </div>
 
             <div className="quotes-section">
+              <h3 className="quotes-title">What students say</h3>
               {isLoadingQuotes ? (
                 <div className="quotes-loading">
                   <div className="quotes-spinner"></div>

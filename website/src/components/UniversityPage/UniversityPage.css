@@ -112,34 +112,48 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
+  padding: 0.5rem;
+  border-radius: 8px;
 }
 
 .details-stat-item {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.25rem;
+  flex: 1;
+  position: relative;
+  padding-top: 2rem;
 }
 
 .details-stat-icon {
-  font-size: 1.25rem;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.5rem;
+  line-height: 1;
 }
 
 .details-stat-label {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.875rem;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
 }
 
 .details-stat-value {
-  color: white;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 500;
+  text-align: center;
+  color: #fff;
 }
 
 .details-section-label {
-  color: white;
-  font-size: 1rem;
-  font-weight: 600;
-  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 0.5rem;
+  text-align: left;
+  width: 100%;
 }
 
 .details-terms-list,
@@ -147,16 +161,43 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  align-items: flex-start;
 }
 
 .details-term-badge,
 .details-language-badge {
-  background: rgba(255, 255, 255, 0.1);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.details-rating-chip {
+  display: inline-block;
   padding: 0.25rem 0.75rem;
-  border-radius: 999px;
-  color: white;
-  font-size: 0.875rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+}
+
+.details-rating-chip.high {
+  background-color: rgba(255, 215, 0, 0.15);
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  color: #FFD700;
+}
+
+.details-rating-chip.mid {
+  background-color: rgba(147, 197, 253, 0.15);
+  border: 1px solid rgba(147, 197, 253, 0.5);
+  color: #93C5FD;
+}
+
+.details-rating-chip.low {
+  background-color: rgba(167, 243, 208, 0.15);
+  border: 1px solid rgba(167, 243, 208, 0.5);
+  color: #A7F3D0;
 }
 
 .plan-section {
@@ -408,4 +449,12 @@
   border-color: rgba(255, 255, 255, 0.3);
   color: white;
   text-decoration: none;
+}
+
+.quotes-title {
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 1.5rem 0;
+  text-align: left;
 } 
