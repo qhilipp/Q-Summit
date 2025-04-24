@@ -99,9 +99,9 @@ def search_universities(input_data: UniversitySearchInput):
 
 
 @app.get(
-    "/university_details/{university_name}", response_model=UniversityDetailsResponse
+    "/university_details/{university_name}/{subject}", response_model=UniversityDetailsResponse
 )
-def university_details(university_name: str):
+def university_details(university_name: str, subject: str):
     """
     Get detailed information about a university, including student quotes.
 
@@ -112,7 +112,7 @@ def university_details(university_name: str):
         UniversityDetailsResponse object with quotes
     """
     # Call the get_uni_details function
-    details = get_uni_details(university_name)
+    details = get_uni_details(university_name, subject)
 
     # Convert the dataclass objects to Pydantic models
     return UniversityDetailsResponse(
