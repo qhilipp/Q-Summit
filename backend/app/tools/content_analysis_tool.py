@@ -30,7 +30,8 @@ class ContentAnalysisSchema(BaseModel):
     Attributes:
         url: Webpage URL to scrape content from
         query: Search query to focus information extraction
-        max_points: Maximum number of key points to return (default 5)"""
+        max_points: Maximum number of key points to return (default 5)
+    """
     url: str = Field(..., description="The URL to scrape content from")
     query: str = Field(
         ..., description="The query to use for extracting relevant information"
@@ -50,7 +51,8 @@ def scrape_text_from_url(url: str) -> str:
         The plain text content of the webpage.
 
     Raises:
-        requests.exceptions.RequestException: If the HTTP request fails."""
+        requests.exceptions.RequestException: If the HTTP request fails.
+    """
     response = requests.get(url)
     return BeautifulSoup(response.text, "html.parser").get_text()
 
