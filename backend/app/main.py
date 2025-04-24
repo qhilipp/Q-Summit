@@ -1,11 +1,15 @@
 from typing import List, Optional, Union
 
 from app.find_unis import search_partner_universities
-from app.get_uni_details import Quote, get_uni_details
-from app.plan_application3 import make_html_from_plan, plan_semester_abroad_application
+from app.get_uni_details import get_uni_details
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
+from backend.app.plan_application import (
+    make_markdown_from_plan,
+    plan_semester_abroad_application,
+)
 
 app = FastAPI()
 
@@ -62,7 +66,7 @@ class ApplicationPlanInput(BaseModel):
 # Define model for application plan response
 class ApplicationPlanResponse(BaseModel):
     plan: str
-    html: str
+    markdown: str
 
 
 @app.get("/items/{item_id}")
@@ -113,13 +117,13 @@ def university_details(university_name: str):
 @app.post("/application_plan", response_model=ApplicationPlanResponse)
 def create_application_plan(input_data: ApplicationPlanInput):
     """
-    Create a semester abroad application plan with both raw text and HTML formats.
+    Create a semester abroad application plan with both raw text and markdown formats.
 
     Args:
         input_data: ApplicationPlanInput containing home_university, target_university, and major
 
     Returns:
-        JSON object with both raw plan text and HTML-formatted plan
+        JSON object with both raw plan text and markdown-formatted plan
     """
     # Generate the application plan
     plan = plan_semester_abroad_application(
@@ -128,8 +132,8 @@ def create_application_plan(input_data: ApplicationPlanInput):
         major=input_data.major,
     )
 
-    # Convert the plan to HTML
-    html_plan = make_html_from_plan(plan)
+    # Convert the plan to markdown
+    markdown_plan = make_markdown_from_plan(plan)
 
     # Return both formats
-    return ApplicationPlanResponse(plan=plan, html=html_plan)
+    return ApplicationPlanResponse(plan=plan, markdown=markdown_plan)

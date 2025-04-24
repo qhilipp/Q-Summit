@@ -1,19 +1,18 @@
 # import module-function
 import os
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
-import requests
 import secrets_
-from bs4 import BeautifulSoup
-from duckduckgo_search.exceptions import DuckDuckGoSearchException
+from find_unis import SearchResult, google, scrape_text_from_url
 from googlesearch import search
+from langchain.agents import Tool, initialize_agent
+from langchain.agents.agent_types import AgentType
+from langchain.llms import OpenAI
 from langchain.prompts import ChatPromptTemplate
-from langchain_community.tools import BraveSearch, DuckDuckGoSearchResults, Tool
-from langchain_community.utilities import DuckDuckGoSearchAPIWrapper, SearxSearchWrapper
+from langchain_core.tools import StructuredTool
 from langchain_openai import AzureChatOpenAI
-from langgraph.graph import END, StateGraph
-from typing_extensions import TypedDict
+from pydantic import BaseModel, Field
 
 llm = AzureChatOpenAI(
     deployment_name=secrets_.AZURE_OPENAI_DEPLOYMENT_NAME,
@@ -23,265 +22,309 @@ llm = AzureChatOpenAI(
 )
 
 
-@dataclass
-class SearchResult:
-    title: str
-    url: str
-    snippet: str
-
-
-def google(query: str, num_results: int = 10):
-    google_search = search(query, advanced=True, num_results=num_results)
-    return [
-        SearchResult(title=result.title, url=result.url, snippet=result.description)
-        for result in google_search
-    ]
-
-
-def scrape_text_from_url(url: str):
-    response = requests.get(url)
-    return BeautifulSoup(response.text, "html.parser").get_text()
-
-
-class WorkflowState(TypedDict):
-    query: str
-    search_results: List[SearchResult]
-    relevant_results: List[SearchResult]
-    universities: List[str]
-    program: str
-    application_info: Dict[str, Dict[str, str]]
-    messages: List[str]
-
-
-def extract_program_from_query(query: str) -> str:
-    programs = [
-        "erasmus",
-        "erasmus+",
-        "freemover",
-        "overseas",
-        "exchange",
-        "study abroad",
-        "international exchange",
-    ]
-    query_lower = query.lower()
-    for prog in programs:
-        if prog in query_lower:
-            return prog
-    return ""
-
-
-def is_relevant_search_result(result: SearchResult, program: str) -> bool:
-    prompt = ChatPromptTemplate.from_template("""
-    Ist dieses Suchergebnis relevant für Partneruniversitäten des {program} Programms?
-    Titel: {title}
-    Beschreibung: {snippet}
-    Antwort: [JA/NEIN]""")
-
-    chain = prompt | llm
-    response = chain.invoke(
-        {"program": program.upper(), "title": result.title, "snippet": result.snippet}
+# Define schema for Google search tool
+class GoogleSearchSchema(BaseModel):
+    query: str = Field(..., description="The search query to use for Google search")
+    filter_query: Optional[str] = Field(
+        None, description="Additional query terms to use for filtering results"
     )
-    return "JA" in response.content.upper()
 
 
-def select_partner_university(universities: list) -> str:
-    if universities:
-        return universities[0]
-    return None
+# Google Search Tool with Filtering
+def google_search_with_filter(query: str, filter_query: str = None) -> List[Dict]:
+    """
+    Perform a Google search using the query and filter results based on relevance.
 
+    Args:
+        query: The search query to use for Google search
+        filter_query: Additional query terms to use for filtering results
 
-def extract_partner_universities(text: str, program: str) -> List[str]:
-    prompt = ChatPromptTemplate.from_template("""
-    Extrahiere Partneruniversitäten aus dem Text für das {program} Programm:
-    {text}
-    Gib nur die Namen zurück, je Zeile einer.""")
+    Returns:
+        List of dictionaries with filtered search results
+    """
+    # Handle case where query is a dict instead of a string (occurs in some LangChain outputs)
+    if isinstance(query, dict) and "description" in query:
+        query = query["description"]
+    elif isinstance(query, dict) and "query" in query:
+        query = query["query"]
 
+    # Handle filter_query similarly
+    if isinstance(filter_query, dict) and "description" in filter_query:
+        filter_query = filter_query["description"]
+
+    # Get search results from Google
+    search_results = google(query, num_results=9)
+
+    # If no filter query provided, return all results
+    if not filter_query:
+        return [
+            {"title": r.title, "url": r.url, "snippet": r.snippet}
+            for r in search_results
+        ]
+
+    # Filter results based on relevance to filter_query
+    filtered_results = []
+
+    # Use LLM to determine relevance with a much stricter prompt
+    template = """
+    You are an expert at evaluating search results for study abroad applications. 
+    
+    Carefully evaluate if the following search result is HIGHLY relevant to the query: "{filter_query}"
+    
+    Search result:
+    Title: {title}
+    Description: {snippet}
+    
+    RELEVANCE CRITERIA:
+    1. The content must be about study abroad application processes, requirements, or deadlines
+    2. The content must either:
+       a) Be from an official university or education authority source, OR
+       b) Contain specific, actionable information about "{target_university}" exchanges, OR
+       c) Provide generally applicable guidance for all study abroad applications
+    3. Content that only mentions study abroad in passing or is primarily about something else is NOT relevant
+    4. Content about study abroad to universities other than the target university is NOT relevant
+    5. Blog posts, personal experiences, or news articles are mostly NOT relevant unless they contain official information
+    
+    First, analyze how the result meets or fails the criteria above.
+    Then respond with ONLY:
+    - "HIGHLY RELEVANT" - if the result is clearly and directly relevant (meeting criteria 1 AND 2)
+    - "NOT RELEVANT" - if the result fails to meet ANY of the criteria
+    """
+
+    prompt = ChatPromptTemplate.from_template(template)
     chain = prompt | llm
-    response = chain.invoke({"program": program, "text": text[:3000]})
-    return [line.strip() for line in response.content.split("\n") if line.strip()]
 
+    # Extract target university from the query
+    import re
 
-# LangGraph Nodes
-def search_node(state: WorkflowState) -> WorkflowState:
-    print("Führe Suche durch...")
-    query = state["query"]
-    results = google(query)
-    program = extract_program_from_query(query)
+    target_university = ""
+    match = re.search(r'"([^"]*)".*"([^"]*)"', query)
+    if match:
+        # Assuming second quoted term is the target university
+        target_university = match.group(2)
 
-    return {
-        **state,
-        "search_results": results,
-        "program": program,
-        "messages": [
-            *state.get("messages", []),
-            f"Suche abgeschlossen: {len(results)} Ergebnisse",
-        ],
-    }
-
-
-def relevance_filter_node(state: WorkflowState) -> WorkflowState:
-    print("Filtere relevante Ergebnisse...")
-    program = state["program"]
-    relevant = [
-        r for r in state["search_results"] if is_relevant_search_result(r, program)
-    ]
-
-    return {
-        **state,
-        "relevant_results": relevant,
-        "messages": [
-            *state["messages"],
-            f"{len(relevant)} relevante Ergebnisse gefunden",
-        ],
-    }
-
-
-def extraction_node(state: WorkflowState) -> WorkflowState:
-    print("Extrahiere Partnerunis und Bewerbungsdetails...")
-    program = state["program"]
-    universities = []
-    # 1. Extrahiere Partnerunis aus Original-Suchergebnissen
-    for result in state["relevant_results"]:
+    for result in search_results:
         try:
-            text = scrape_text_from_url(result.url)
-            unis = extract_partner_universities(text, program)
-            universities.extend(unis)
-        except Exception as e:
-            print(f"Fehler bei {result.url}: {e}")
-
-    unique_unis = list(dict.fromkeys(u for u in universities if u))
-
-    if not unique_unis:
-        return {
-            **state,
-            "universities": [],
-            "messages": [*state["messages"], "Keine Partnerunis gefunden."],
-        }
-
-    # 2. Wähle Uni und führe Zusatzsuche durch
-    selected_university = unique_unis[0]
-    detail_query = f"{selected_university} Bewerbungsfristen Sprachvoraussetzungen Academic Calendar GPA"
-
-    # 3. Neue Google-Suche für Bewerbungsdetails
-    print(f"Führe Detail-Suche durch für: {selected_university}")
-    detail_results = google(detail_query)
-
-    # 4. Extrahiere Details aus den Detail-Ergebnissen
-    details_text = ""
-    for result in detail_results:
-        try:
-            text = scrape_text_from_url(result.url)
-            prompt = ChatPromptTemplate.from_template("""
-Extrahiere folgende Bewerbungsdetails aus dem Text:
-- Bewerbungsfristen (konkrete Daten/Zeiträume)
-- Semesterzeiten (Academic Calendar)
-- Sprachzertifikate (mit Mindestpunktzahlen)
-- Notendurchschnittsanforderungen (GPA)
-
-Format:
-Universität: {university}
-Bewerbungsdeadline: [Datum/Zeitraum]
-Academic Calendar: [Semesterzeiten]
-Sprachkenntnisse: [Anforderungen]
-GPA-Anforderung: [Mindestnote]
-
-Antworte NUR mit diesen Feldern. Keine Erklärungen.
-Text:
-{text}
-            """)
-            chain = prompt | llm
-            response = chain.invoke(
-                {"university": selected_university, "text": text[:4000]}
+            evaluation = chain.invoke(
+                {
+                    "filter_query": filter_query,
+                    "title": result.title,
+                    "snippet": result.snippet,
+                    "target_university": target_university,
+                }
             )
 
-            # Validiere Antwortformat
-            if all(
-                keyword in response.content
-                for keyword in [
-                    "Bewerbungsdeadline:",
-                    "Academic Calendar:",
-                    "Sprachkenntnisse:",
-                ]
-            ):
-                details_text = response.content.strip()
-                break
-
-        except Exception as e:
-            print(f"Fehler bei Detail-URL {result.url}: {e}")
-
-    # 5. Fallback: Durchsuche Original-Ergebnisse
-    if not details_text:
-        for result in state["relevant_results"]:
-            try:
-                text = scrape_text_from_url(result.url)
-                prompt = ChatPromptTemplate.from_template("""
-Extrahiere aus dem Text Bewerbungsdetails für {university}:
-{text}
-                """)
-                chain = prompt | llm
-                response = chain.invoke(
-                    {"university": selected_university, "text": text[:4000]}
+            if "HIGHLY RELEVANT" in evaluation.content.upper():
+                filtered_results.append(
+                    {
+                        "title": result.title,
+                        "url": result.url,
+                        "snippet": result.snippet,
+                    }
                 )
-                if "Bewerbungsdeadline:" in response.content:
-                    details_text = response.content.strip()
-                    break
-            except Exception as e:
-                print(f"Fehler bei {result.url}: {e}")
+        except Exception as e:
+            print(f"Error evaluating result {result.title}: {str(e)}")
 
-    # 6. Finaler Fallback
-    if not details_text:
-        details_text = f"""Universität: {selected_university}
-Bewerbungsdeadline: Unbekannt
-Academic Calendar: Unbekannt
-Sprachkenntnisse: Unbekannt
-GPA-Anforderung: Unbekannt"""
+    # Double-check for relevance based on URL patterns that indicate official sources
+    if target_university:
+        for result in search_results:
+            # Skip if already included
+            if any(r["url"] == result.url for r in filtered_results):
+                continue
 
-    # 7. Speichern
-    with open("bewerbungsdetails.txt", "w", encoding="utf-8") as f:
-        f.write(details_text)
+            # Check if URL is from an official university domain or education authority
+            url_lower = result.url.lower()
+            target_uni_words = [
+                w.lower() for w in target_university.split() if len(w) > 2
+            ]
 
-    return {
-        **state,
-        "universities": unique_unis,
-        "selected_university": selected_university,
-        "application_info": details_text,
-        "messages": [
-            *state["messages"],
-            f"Details für {selected_university} gespeichert",
-            f"Verwendete Detail-Query: {detail_query}",
-        ],
-    }
+            # If URL contains university domain patterns and target university keywords
+            if (
+                (
+                    ".edu" in url_lower
+                    or ".ac." in url_lower
+                    or "university" in url_lower
+                )
+                and any(word in url_lower for word in target_uni_words)
+                and (
+                    "exchange" in url_lower
+                    or "abroad" in url_lower
+                    or "international" in url_lower
+                )
+            ):
+                filtered_results.append(
+                    {
+                        "title": result.title,
+                        "url": result.url,
+                        "snippet": result.snippet,
+                    }
+                )
+
+    return filtered_results
 
 
-workflow = StateGraph(WorkflowState)
-workflow.add_node("search", search_node)
-workflow.add_node("filter", relevance_filter_node)
-workflow.add_node("extract", extraction_node)
-workflow.set_entry_point("search")
-workflow.add_edge("search", "filter")
-workflow.add_edge("filter", "extract")
-workflow.add_edge("extract", END)
-app = workflow.compile()
+# Create the LangChain tool
+google_search_tool = StructuredTool.from_function(
+    func=google_search_with_filter,
+    name="GoogleSearchFilter",
+    description="Searches Google with the provided query and filters results based on relevance to a filter query.",
+    args_schema=GoogleSearchSchema,
+)
 
 
-def save_details_to_txt(details_text, filename="bewerbungsdetails.txt"):
-    with open(filename, "w", encoding="utf-8") as f:
-        f.write(details_text)
-    print(f"Bewerbungsdetails gespeichert in {filename}")
+# Define schema for content extraction tool
+class ContentAnalysisSchema(BaseModel):
+    url: str = Field(..., description="The URL to scrape content from")
+    query: str = Field(
+        ..., description="The query to use for extracting relevant information"
+    )
+    max_points: int = Field(
+        5, description="Maximum number of important points to extract"
+    )
+
+
+# URL Content Extraction Tool
+def extract_important_points(url: str, query: str, max_points: int = 5) -> Dict:
+    """
+    Scrapes text from a URL and extracts the most important points related to a query.
+
+    Args:
+        url: The URL to scrape content from
+        query: The query to use for extracting relevant information
+        max_points: Maximum number of important points to extract (default: 5)
+
+    Returns:
+        Dictionary with the URL, query, and extracted important points
+    """
+    try:
+        # Scrape text content from the URL
+        scraped_text = scrape_text_from_url(url)
+
+        # If the scraped text is too long, truncate it to prevent token limits
+        max_text_length = 8000  # Adjust based on token limits of your LLM
+        if len(scraped_text) > max_text_length:
+            scraped_text = scraped_text[:max_text_length] + "... [text truncated]"
+
+        # Create a prompt template for extracting important points
+        template = """
+        You are an expert at extracting and summarizing important information.
+        
+        I have the following text content from a webpage, and I need you to extract 
+        the {max_points} most important points related to this query: "{query}"
+        
+        Webpage content:
+        {text_content}
+        
+        Return ONLY a numbered list of the {max_points} most important and relevant points.
+        Each point should be concise but informative (1-2 sentences each).
+        If there are fewer than {max_points} relevant points, return only those that are relevant.
+        """
+
+        prompt = ChatPromptTemplate.from_template(template)
+        chain = prompt | llm
+
+        result = chain.invoke(
+            {"query": query, "text_content": scraped_text, "max_points": max_points}
+        )
+
+        # Process the result to extract the points as a list
+        points_text = result.content.strip()
+        points_list = [line.strip() for line in points_text.split("\n") if line.strip()]
+
+        return {
+            "url": url,
+            "query": query,
+            "important_points": points_list,
+            "source_length": len(scraped_text),
+        }
+
+    except Exception as e:
+        return {"url": url, "query": query, "error": str(e), "important_points": []}
+
+
+# Create Content Analysis Tool
+content_analysis_tool = StructuredTool.from_function(
+    func=extract_important_points,
+    name="ContentAnalyzer",
+    description="Scrapes content from a URL and extracts the most important points related to a query.",
+    args_schema=ContentAnalysisSchema,
+)
+
+
+def plan_semester_abroad_application(
+    home_university: str, target_university: str, major: str
+) -> Dict:
+    """
+    Plans a semester abroad application for a given home university, target university, and major.
+    """
+    agent = initialize_agent(
+        [google_search_tool, content_analysis_tool],
+        llm,
+        agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
+        verbose=True,
+        max_execution_time=8,
+        early_stopping_method="generate",
+    )
+    result = agent.invoke(
+        {
+            "input": f"""
+            Create a brief plan for applying to a semester abroad program from "{home_university}" to "{target_university}" for a student majoring in "{major}".
+            
+            Possible topics to research and outline:
+            1. Application deadlines and important dates from both universities
+            2. Required documents and application materials (transcripts, recommendations, language tests, etc.)
+            3. Financial considerations (tuition, scholarships, living costs, insurance)
+            4. Visa requirements and immigration processes
+            5. Course equivalency and credit transfer policies
+            6. Housing options at the target university
+            7. Pre-departure preparations (health, orientation, packing)
+            8. Academic considerations specific to the student's major
+            9. Timeline with key milestones and application steps
+            10. Common challenges and how to address them
+            
+            Use university websites and official sources whenever possible. The plan should be brief, actionable, and organized well.
+            Don't take into account too many websites, just focus on the most important ones.
+            """
+        }
+    )
+    return result["output"]
+
+
+def make_markdown_from_plan(plan: str) -> str:
+    """
+    Let llm make a markdown document from the plan to give a good overview.
+    """
+    template = """
+    You are an expert Markdown writer. Convert the following study abroad application plan into a 
+    well-organized, visually appealing Markdown document. The Markdown should:
+    
+    1. Have a clean, professional structure
+    2. Include appropriate sections with headings
+    3. Use lists, tables, or emphasis where appropriate
+    4. Include a timeline or checklist section if possible
+    5. Use a readable, hierarchical layout
+    6. Utilize Markdown formatting features (bold, italic, headers, etc.)
+    
+    Here's the plan to convert:
+    {plan}
+    
+    Return ONLY the complete Markdown content.
+    """
+
+    prompt = ChatPromptTemplate.from_template(template)
+    chain = prompt | llm
+
+    result = chain.invoke({"plan": plan})
+
+    return result.content
 
 
 if __name__ == "__main__":
-    initial_state = WorkflowState(
-        query="Erasmus Partneruniversitäten Informatik Uni Münster",
-        search_results=[],
-        relevant_results=[],
-        universities=[],
-        program="",
-        application_info={},
-        messages=[],
+    result = plan_semester_abroad_application(
+        "Muenster",
+        "UCSB",
+        "Computer Science",
     )
-    result = app.invoke(initial_state)
-    print("\nGefundene Partneruniversitäten:")
-    print("\n".join(result["universities"]))
-    print("\nBewerbungsdetails (auch in bewerbungsdetails.txt):")
-    print(result["application_info"])
+    print(result)
+    markdown_plan = make_markdown_from_plan(result)
+    print(markdown_plan)
