@@ -141,21 +141,6 @@ const UniversityPage = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <motion.div 
-        className="navbar"
-        initial={{ opacity: 0 }}
-        animate={{ 
-          opacity: plan ? 1 : 0
-        }}
-        transition={{ 
-          duration: 0.6,
-          delay: 0.3,
-          ease: "easeOut"
-        }}
-      >
-        <h1 className="page-title">Your plan</h1>
-      </motion.div>
-
       <div className="scrollable-content">
         <div className="content-wrapper">
           <div className="left-column">
@@ -265,6 +250,29 @@ const UniversityPage = () => {
               </div>
             ) : plan ? (
               <div className="plan-content">
+                <motion.h1 
+                  className="page-title"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.1 }}
+                >
+                  <div className="title-gradient-wrapper">
+                    {Array.from("Your plan").map((char, index) => (
+                      <motion.span
+                        key={index}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{
+                          duration: 0.4,
+                          delay: index * 0.1,
+                          ease: [0.2, 0.65, 0.3, 0.9]
+                        }}
+                      >
+                        {char === " " ? "\u00A0" : char}
+                      </motion.span>
+                    ))}
+                  </div>
+                </motion.h1>
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   rehypePlugins={[rehypeRaw]}
