@@ -1,4 +1,5 @@
 from typing import List, Optional, Union
+
 from app.find_unis import search_partner_universities
 from app.get_uni_details import get_uni_details
 from app.plan_application import (
@@ -8,8 +9,6 @@ from app.plan_application import (
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-
-
 
 app = FastAPI()
 app.add_middleware(
@@ -35,6 +34,7 @@ class UniversitySearchInput(BaseModel):
         end_month (Optional[int]): Optional end month for the exchange.
         end_year (Optional[int]): Optional end year for the exchange.
     """
+
     university: str
     major: str
     gpa: float
@@ -57,6 +57,7 @@ class UniversityResult(BaseModel):
         ranking (str): Ranking category (e.g., high, mid, low).
         languages (List[str]): Languages of instruction.
     """
+
     title: str
     description: str
     image: Optional[str] = None
@@ -72,6 +73,7 @@ class QuoteModel(BaseModel):
         quote (str): The quote text.
         source_link (str): URL of the source blog or article.
     """
+
     quote: str
     source_link: str
 
@@ -82,6 +84,7 @@ class UniversityDetailsResponse(BaseModel):
     Attributes:
         quotes (List[QuoteModel]): List of student quotes.
     """
+
     quotes: List[QuoteModel]
 
 
@@ -93,6 +96,7 @@ class ApplicationPlanInput(BaseModel):
         target_university (str): Name of the target university.
         major (str): Student's major.
     """
+
     home_university: str
     target_university: str
     major: str
@@ -105,44 +109,9 @@ class ApplicationPlanResponse(BaseModel):
         plan (str): The raw application plan text.
         markdown (str): Markdown-formatted version of the plan.
     """
+
     plan: str
     markdown: str
-
-
-class DeadlineFindResponse(BaseModel):
-    """Response model for application deadline information.
-
-    Attributes:
-        deadline_info (str): Information about deadlines.
-    """
-    deadline_info: str
-
-
-@app.post("/deadline_find", response_model=DeadlineFindResponse)
-def deadline_find(input_data: UniversitySearchInput):
-    """Find application deadlines for the given university and major.
-
-    Args:
-        input_data (UniversitySearchInput): Input data with university and major.
-
-    Returns:
-        DeadlineFindResponse: Deadline information.
-    """
-    return deadline_find(input_data)
-
-
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: Union[str, None] = None):
-    """Example endpoint to demonstrate path and query parameter usage.
-
-    Args:
-        item_id (int): The item ID.
-        q (Optional[str]): Optional query string.
-
-    Returns:
-        dict: Dictionary with doubled item_id and query string.
-    """
-    return {"item_id": item_id * 2, "q": q}
 
 
 @app.post("/search_universities", response_model=List[UniversityResult])
@@ -196,6 +165,6 @@ def create_application_plan(input_data: ApplicationPlanInput):
         target_university=input_data.target_university,
         major=input_data.major,
     )
-    
+
     markdown_plan = make_markdown_from_plan(plan)
     return ApplicationPlanResponse(plan=plan, markdown=markdown_plan)
