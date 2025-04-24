@@ -68,6 +68,14 @@ class ApplicationPlanResponse(BaseModel):
     plan: str
     markdown: str
 
+# Define model for deadline find response
+class DeadlineFindResponse(BaseModel):
+    deadline_info: str
+
+@app.post("/deadline_find", response_model=DeadlineFindResponse)
+def deadline_find(input_data: UniversitySearchInput):
+    return deadline_find(input_data)
+
 
 @app.get("/items/{item_id}")
 def read_item(item_id: int, q: Union[str, None] = None):
