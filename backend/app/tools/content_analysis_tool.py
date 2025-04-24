@@ -1,7 +1,6 @@
 import os
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Union
-
+from typing import Dict
 import requests
 import secrets_
 from bs4 import BeautifulSoup
@@ -15,7 +14,9 @@ from langchain_openai import AzureChatOpenAI
 from pydantic import BaseModel, Field
 from tools.google_search_tool import google_search_tool
 
-llm = AzureChatOpenAI(
+
+# LLM initialization
+llm = AzureChatOpenAI(  
     deployment_name=secrets_.AZURE_OPENAI_DEPLOYMENT_NAME,
     openai_api_key=secrets_.AZURE_OPENAI_API_KEY,
     azure_endpoint=secrets_.AZURE_OPENAI_ENDPOINT,
@@ -24,6 +25,12 @@ llm = AzureChatOpenAI(
 
 
 class ContentAnalysisSchema(BaseModel):
+    """Schema for content analysis requests.
+    
+    Attributes:
+        url: Webpage URL to scrape content from
+        query: Search query to focus information extraction
+        max_points: Maximum number of key points to return (default 5)"""
     url: str = Field(..., description="The URL to scrape content from")
     query: str = Field(
         ..., description="The query to use for extracting relevant information"
@@ -34,7 +41,16 @@ class ContentAnalysisSchema(BaseModel):
 
 
 def scrape_text_from_url(url: str) -> str:
-    """Extract plain text content from a webpage."""
+    """Extract plain text content from a webpage.
+    
+    Args:
+        url: The URL of the webpage to scrape.
+
+    Returns:
+        The plain text content of the webpage.
+
+    Raises:
+        requests.exceptions.RequestException: If the HTTP request fails."""
     response = requests.get(url)
     return BeautifulSoup(response.text, "html.parser").get_text()
 
@@ -52,15 +68,11 @@ def extract_important_points(url: str, query: str, max_points: int = 5) -> Dict:
         Dictionary with the URL, query, and extracted important points
     """
     try:
-        # Scrape text content from the URL
         scraped_text = scrape_text_from_url(url)
-
-        # If the scraped text is too long, truncate it to prevent token limits
         max_text_length = 8000  # Adjust based on token limits of your LLM
         if len(scraped_text) > max_text_length:
             scraped_text = scraped_text[:max_text_length] + "... [text truncated]"
 
-        # Create a prompt template for extracting important points
         template = """
         You are an expert at extracting and summarizing important information.
         
@@ -81,8 +93,6 @@ def extract_important_points(url: str, query: str, max_points: int = 5) -> Dict:
         result = chain.invoke(
             {"query": query, "text_content": scraped_text, "max_points": max_points}
         )
-
-        # Process the result to extract the points as a list
         points_text = result.content.strip()
         points_list = [line.strip() for line in points_text.split("\n") if line.strip()]
 
@@ -97,7 +107,7 @@ def extract_important_points(url: str, query: str, max_points: int = 5) -> Dict:
         return {"url": url, "query": query, "error": str(e), "important_points": []}
 
 
-# Create Content Analysis Tool
+# Tool creation with explicit argument specification
 content_analysis_tool = StructuredTool.from_function(
     func=extract_important_points,
     name="ContentAnalyzer",
