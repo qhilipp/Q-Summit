@@ -204,7 +204,9 @@ const UniversityDetailsPopup = ({ university, isOpen, onClose }) => {
                   </div>
                 )}
 
-                <button className="select-button" onClick={() => navigate(`/university/${university.id}`)}>
+                <button className="select-button" onClick={() => navigate(`/university/${university.id}`, {
+                  state: { university }
+                })}>
                   Select University →
                 </button>
               </div>

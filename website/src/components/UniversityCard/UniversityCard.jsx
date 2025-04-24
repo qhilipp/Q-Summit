@@ -69,7 +69,9 @@ const UniversityCard = ({ university, onClick }) => {
 
   const handleSelect = (e) => {
     e.stopPropagation(); // Prevent card click event from firing
-    navigate(`/university/${university.id}`);
+    navigate(`/university/${university.id}`, {
+      state: { university }
+    });
   };
 
   return (

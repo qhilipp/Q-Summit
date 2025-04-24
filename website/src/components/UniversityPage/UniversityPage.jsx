@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useUserData } from '../../context/UserDataContext';
 import ReactMarkdown from 'react-markdown';
@@ -9,18 +9,74 @@ import './UniversityPage.css';
 
 const UniversityPage = () => {
   const { id } = useParams();
+  const location = useLocation();
+  const universityData = location.state?.university;
   const { userData } = useUserData();
   const [plan, setPlan] = useState(null);
+  const [quotes, setQuotes] = useState(null);
   const [isLoadingPlan, setIsLoadingPlan] = useState(false);
+  const [isLoadingQuotes, setIsLoadingQuotes] = useState(false);
   const [error, setError] = useState(null);
-  const requestMade = useRef(false);
+  const lastRequestTime = useRef(0);
+
+  const getLanguageFlag = (language) => {
+    const flags = {
+      'English': '🇬🇧',
+      'German': '🇩🇪',
+      'French': '🇫🇷',
+      'Spanish': '🇪🇸',
+      'Italian': '🇮🇹',
+      'Chinese': '🇨🇳',
+      'Japanese': '🇯🇵',
+      'Korean': '🇰🇷',
+      'Russian': '🇷🇺',
+      'Arabic': '🇦🇪',
+      'Portuguese': '🇵🇹',
+      'Dutch': '🇳🇱',
+      'Swedish': '🇸🇪',
+      'Norwegian': '🇳🇴',
+      'Finnish': '🇫🇮',
+      'Danish': '🇩🇰',
+      'Turkish': '🇹🇷',
+      'Polish': '🇵🇱',
+      'Czech': '🇨🇿',
+      'Greek': '🇬🇷',
+      'Hungarian': '🇭🇺',
+    };
+    return flags[language] || '🌐';
+  };
+
+  const getRankingLabel = (ranking) => {
+    if (ranking === 'high') return 'High';
+    if (ranking === 'mid') return 'Mid';
+    if (ranking === 'low') return 'Low';
+    return ranking;
+  };
+
+  const getRankingClass = (ranking) => {
+    return `details-rating-chip ${ranking}`;
+  };
+
+  const getTermEmoji = (term) => {
+    const emojis = {
+      'Fall': '🍂',
+      'Spring': '🌸',
+      'Summer': '☀️',
+      'Winter': '❄️'
+    };
+    return emojis[term] || '📅';
+  };
 
   useEffect(() => {
+    console.log("University Data:", universityData);
     const fetchApplicationPlan = async () => {
-      if (requestMade.current) return;
-      requestMade.current = true;
+      const now = Date.now();
+      if (now - lastRequestTime.current < 1000) {
+        console.log("Throttling request - less than 1 second since last request");
+        return;
+      }
+      lastRequestTime.current = now;
 
-      //if (!userData.university || !userData.major) return;
       console.log("Fetching application plan");
       setIsLoadingPlan(true);
       setError(null);
@@ -30,9 +86,9 @@ const UniversityPage = () => {
         myHeaders.append("Content-Type", "application/json");
 
         const raw = JSON.stringify({
-          "home_university": "Muenster",//userData.university,
-          "target_university": "UCSB",//decodeURIComponent(id),
-          "major": "Computer Science"//userData.major
+          "home_university": userData.university || "Muenster",
+          "target_university": universityData?.title || decodeURIComponent(id),
+          "major": userData.major || "Computer Science"
         });
 
         const requestOptions = {
@@ -56,12 +112,27 @@ const UniversityPage = () => {
     };
 
     fetchApplicationPlan();
+  }, [userData.university, userData.major, id, universityData]);
 
-    // Cleanup function to reset the ref when component unmounts
-    return () => {
-      requestMade.current = false;
+  useEffect(() => {
+    const fetchQuotes = async () => {
+      setIsLoadingQuotes(true);
+      try {
+        const response = await fetch(`http://localhost:8000/university_details/${encodeURIComponent(universityData?.title || decodeURIComponent(id))}`, {
+          method: "GET",
+          redirect: "follow"
+        });
+        const result = await response.json();
+        setQuotes(result.quotes);
+      } catch (error) {
+        console.error('Error fetching quotes:', error);
+      } finally {
+        setIsLoadingQuotes(false);
+      }
     };
-  }, [userData.university, userData.major, id]);
+
+    fetchQuotes();
+  }, [id, universityData]);
 
   return (
     <motion.div 
@@ -70,42 +141,155 @@ const UniversityPage = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="plan-section">
-        {isLoadingPlan ? (
-          <div className="plan-loading">
-            <div className="plan-spinner"></div>
-            <p>Crafting your plan...</p>
+      <motion.div 
+        className="navbar"
+        initial={{ opacity: 0 }}
+        animate={{ 
+          opacity: plan ? 1 : 0
+        }}
+        transition={{ 
+          duration: 0.6,
+          delay: 0.3,
+          ease: "easeOut"
+        }}
+      >
+        <h1 className="page-title">Your plan</h1>
+      </motion.div>
+
+      <div className="scrollable-content">
+        <div className="content-wrapper">
+          <div className="left-column">
+            <div className="details-card">
+              <h3 className="details-title">{universityData?.title}</h3>
+              
+              <div className="details-image-container">
+                <img 
+                  src={universityData?.image} 
+                  alt={universityData?.title}
+                  className="details-image"
+                />
+              </div>
+              
+              <div className="details-content">
+                <p className="details-description">{universityData?.description}</p>
+                
+                <div className="details-stats">
+                  <div className="details-stat-item">
+                    <span className="details-stat-icon">🏆</span>
+                    <span className="details-stat-label">Ranking</span>
+                    <span className={`details-stat-value ${getRankingClass(universityData?.ranking)}`}>
+                      {getRankingLabel(universityData?.ranking)}
+                    </span>
+                  </div>
+                  <div className="details-stat-item">
+                    <span className="details-stat-icon">👨‍🎓</span>
+                    <span className="details-stat-label">Students</span>
+                    <span className="details-stat-value">
+                      {universityData?.student_count?.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="details-stat-item">
+                    <span className="details-stat-icon">📊</span>
+                    <span className="details-stat-label">Min. GPA</span>
+                    <span className="details-stat-value">
+                      {universityData?.gpa?.toFixed(1)}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="details-terms">
+                  <h4 className="details-section-label">Terms</h4>
+                  <div className="details-terms-list">
+                    {universityData?.terms?.map((term, index) => (
+                      <span key={index} className="details-term-badge">
+                        {getTermEmoji(term)} {term}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="details-languages">
+                  <h4 className="details-section-label">Languages</h4>
+                  <div className="details-languages-list">
+                    {universityData?.languages?.map((language, index) => (
+                      <span key={index} className="details-language-badge">
+                        {getLanguageFlag(language)} {language}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="quotes-section">
+              {isLoadingQuotes ? (
+                <div className="quotes-loading">
+                  <div className="quotes-spinner"></div>
+                  <p>Loading quotes...</p>
+                </div>
+              ) : quotes && quotes.length > 0 ? (
+                <div className="quotes-list">
+                  {quotes.map((quote, index) => (
+                    <motion.div 
+                      key={index}
+                      className="quote-card"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                    >
+                      <p className="quote-text">{quote.quote}</p>
+                      <a 
+                        href={quote.source_link} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="quote-source"
+                      >
+                        Source →
+                      </a>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
           </div>
-        ) : error ? (
-          <div className="plan-error">
-            {error}
+
+          <div className="plan-section">
+            {isLoadingPlan ? (
+              <div className="plan-loading">
+                <div className="plan-spinner"></div>
+                <p>Crafting your plan...</p>
+              </div>
+            ) : error ? (
+              <div className="plan-error">
+                {error}
+              </div>
+            ) : plan ? (
+              <div className="plan-content">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeRaw]}
+                  components={{
+                    h1: ({node, ...props}) => <h1 style={{color: '#ffffff'}} {...props} />,
+                    h2: ({node, ...props}) => <h2 style={{color: '#ffffff'}} {...props} />,
+                    h3: ({node, ...props}) => <h3 style={{color: '#ffffff'}} {...props} />,
+                    p: ({node, ...props}) => <p style={{color: '#ffffff', lineHeight: '1.6'}} {...props} />,
+                    ul: ({node, ...props}) => <ul style={{color: '#ffffff', marginLeft: '1.5rem'}} {...props} />,
+                    ol: ({node, ...props}) => <ol style={{color: '#ffffff', marginLeft: '1.5rem'}} {...props} />,
+                    li: ({node, ...props}) => <li style={{color: '#ffffff', marginBottom: '0.5rem'}} {...props} />,
+                    a: ({node, ...props}) => <a style={{color: '#64b5f6'}} {...props} />,
+                    code: ({node, inline, ...props}) => (
+                      inline ? 
+                        <code style={{background: 'rgba(255, 255, 255, 0.1)', padding: '0.2em 0.4em', borderRadius: '3px'}} {...props} /> :
+                        <code style={{display: 'block', background: 'rgba(0, 0, 0, 0.2)', padding: '1em', borderRadius: '4px', overflowX: 'auto'}} {...props} />
+                    )
+                  }}
+                >
+                  {plan}
+                </ReactMarkdown>
+              </div>
+            ) : null}
           </div>
-        ) : plan ? (
-          <div className="plan-content">
-            <ReactMarkdown 
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeRaw]}
-              components={{
-                // Add custom components for better rendering
-                h1: ({node, ...props}) => <h1 style={{color: '#ffffff'}} {...props} />,
-                h2: ({node, ...props}) => <h2 style={{color: '#ffffff'}} {...props} />,
-                h3: ({node, ...props}) => <h3 style={{color: '#ffffff'}} {...props} />,
-                p: ({node, ...props}) => <p style={{color: '#ffffff', lineHeight: '1.6'}} {...props} />,
-                ul: ({node, ...props}) => <ul style={{color: '#ffffff', marginLeft: '1.5rem'}} {...props} />,
-                ol: ({node, ...props}) => <ol style={{color: '#ffffff', marginLeft: '1.5rem'}} {...props} />,
-                li: ({node, ...props}) => <li style={{color: '#ffffff', marginBottom: '0.5rem'}} {...props} />,
-                a: ({node, ...props}) => <a style={{color: '#64b5f6'}} {...props} />,
-                code: ({node, inline, ...props}) => (
-                  inline ? 
-                    <code style={{background: 'rgba(255, 255, 255, 0.1)', padding: '0.2em 0.4em', borderRadius: '3px'}} {...props} /> :
-                    <code style={{display: 'block', background: 'rgba(0, 0, 0, 0.2)', padding: '1em', borderRadius: '4px', overflowX: 'auto'}} {...props} />
-                )
-              }}
-            >
-              {plan}
-            </ReactMarkdown>
-          </div>
-        ) : null}
+        </div>
       </div>
     </motion.div>
   );
