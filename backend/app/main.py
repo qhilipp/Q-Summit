@@ -2,14 +2,13 @@ from typing import List, Optional, Union
 
 from app.find_unis import search_partner_universities
 from app.get_uni_details import get_uni_details
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-
-from backend.app.plan_application import (
+from app.plan_application import (
     make_markdown_from_plan,
     plan_semester_abroad_application,
 )
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 app = FastAPI()
 
@@ -68,9 +67,11 @@ class ApplicationPlanResponse(BaseModel):
     plan: str
     markdown: str
 
+
 # Define model for deadline find response
 class DeadlineFindResponse(BaseModel):
     deadline_info: str
+
 
 @app.post("/deadline_find", response_model=DeadlineFindResponse)
 def deadline_find(input_data: UniversitySearchInput):

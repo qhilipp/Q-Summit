@@ -1,7 +1,5 @@
-import os
 from dataclasses import dataclass
 from typing import Any, Dict, List
-
 import requests
 import secrets_
 from bs4 import BeautifulSoup
@@ -10,7 +8,8 @@ from langchain.prompts import ChatPromptTemplate
 from langchain_community.tools import Tool
 from langchain_openai import AzureChatOpenAI
 
-# Initialize the language model
+
+# LLM initialization
 llm = AzureChatOpenAI(
     deployment_name=secrets_.AZURE_OPENAI_DEPLOYMENT_NAME,
     openai_api_key=secrets_.AZURE_OPENAI_API_KEY,
@@ -21,7 +20,13 @@ llm = AzureChatOpenAI(
 
 @dataclass
 class SearchResult:
-    """Represents a search result with title, URL and snippet."""
+    """Represents a search result with title, URL and snippet.
+    
+    Attributes:
+        title (str): The title of the search result.
+        url (str): The URL of the search result.
+        snippet (str): The snippet or description of the search result.2
+    """
 
     title: str
     url: str
@@ -30,7 +35,15 @@ class SearchResult:
 
 # Search and Scraping Functions
 def google(query: str, num_results: int = 10) -> List[SearchResult]:
-    """Perform a Google search and return results as SearchResult objects."""
+    """Perform a Google search and return results as SearchResult objects.
+
+    Args:
+        query (str): The search query.
+        num_results (int, optional): Number of results to return. Defaults to 10.
+
+    Returns:
+        List[SearchResult]: List of search results as SearchResult objects.
+    """
     google_search = search(query, advanced=True, num_results=num_results)
     return [
         SearchResult(title=result.title, url=result.url, snippet=result.description)
@@ -39,14 +52,28 @@ def google(query: str, num_results: int = 10) -> List[SearchResult]:
 
 
 def scrape_text_from_url(url: str) -> str:
-    """Extract plain text content from a webpage."""
+    """Extract plain text content from a webpage.
+
+    Args:
+        url (str): The URL to scrape.
+
+    Returns:
+        str: The plain text content extracted from the page.
+    """
     response = requests.get(url)
     return BeautifulSoup(response.text, "html.parser").get_text()
 
 
 # Analysis Functions
 def is_relevant_search_result(result: SearchResult) -> bool:
-    """Determine if a search result likely contains university partnership information."""
+    """Determine if a search result likely contains university partnership information.
+
+    Args:
+        result (SearchResult): The search result to evaluate.
+
+    Returns:
+        bool: True if the result is relevant, False otherwise.
+    """
     template = """
     Evaluate if the following search result is likely to contain information about university partnerships, 
     exchange programs, or partner universities for academic institutions.
@@ -70,7 +97,14 @@ def is_relevant_search_result(result: SearchResult) -> bool:
 
 
 def extract_partner_universities(text: str) -> List[str]:
-    """Extract partner university names from text using LLM."""
+    """Extract partner university names from text using LLM.
+
+    Args:
+        text (str): The text to analyze.
+
+    Returns:
+        List[str]: List of partner university names.
+    """
     template = """
     Extract all partner university names from the following text.
     Return ONLY a list of university names, one per line.
@@ -94,11 +128,18 @@ def extract_partner_universities(text: str) -> List[str]:
 def find_partner_universities_from_results(
     search_results: List[SearchResult], query: str = ""
 ) -> str:
-    """Process search results to extract partner universities."""
+    """Process search results to extract partner universities.
+
+    Args:
+        search_results (List[SearchResult]): List of search results.
+        query (str, optional): Search query for context. Defaults to "".
+
+    Returns:
+        str: A formatted string listing partner universities found, or an error message.
+    """
     if not search_results:
         return "No search results provided."
 
-    # Filter to only relevant results
     relevant_results = [r for r in search_results if is_relevant_search_result(r)]
 
     if not relevant_results:
@@ -108,11 +149,10 @@ def find_partner_universities_from_results(
     processed_urls = []
     errors = []
 
-    # Process each relevant result
     for result in relevant_results:
         try:
             if result.url in processed_urls:
-                continue  # Skip duplicate URLs
+                continue
 
             processed_urls.append(result.url)
             text = scrape_text_from_url(result.url)
@@ -123,7 +163,6 @@ def find_partner_universities_from_results(
         except Exception as e:
             errors.append(f"Error processing {result.url}: {str(e)}")
 
-    # Remove duplicates while preserving order
     unique_universities = []
     for uni in all_universities:
         if uni not in unique_universities:
@@ -141,7 +180,15 @@ def find_partner_universities_from_results(
 
 
 def find_partner_universities(url: str, query: str = "") -> str:
-    """Scrape a URL and extract partner university names."""
+    """Scrape a URL and extract partner university names.
+
+    Args:
+        url (str): The URL to scrape.
+        query (str, optional): The query for context. Defaults to "".
+
+    Returns:
+        str: A formatted string listing partner universities found, or an error message.
+    """
     try:
         text = scrape_text_from_url(url)
         universities = extract_partner_universities(text)
@@ -154,7 +201,7 @@ def find_partner_universities(url: str, query: str = "") -> str:
         return f"Error processing URL: {str(e)}"
 
 
-# Create the LangChain tool
+# Create LangChain tool
 university_finder_tool = Tool.from_function(
     func=lambda params: find_partner_universities_from_results(
         params["search_results"], params["query"]
@@ -165,7 +212,14 @@ university_finder_tool = Tool.from_function(
 
 
 def get_university_base_url(university_name: str) -> str:
-    """Ask LLM to provide the base URL for a university."""
+    """Ask LLM to provide the base URL for a university.
+
+    Args:
+        university_name (str): The name of the university.
+
+    Returns:
+        str: The official base URL of the university.
+    """
     template = """
     What is the official base website URL for {university_name}?
     Return ONLY the URL with no additional text or explanations.
@@ -175,24 +229,25 @@ def get_university_base_url(university_name: str) -> str:
     prompt = ChatPromptTemplate.from_template(template)
     chain = prompt | llm
     result = chain.invoke({"university_name": university_name})
-
-    # Clean up the result to get just the URL
     url = result.content.strip().replace('"', "").replace("'", "")
     return url
 
 
-# Filtering Partner Universities Based on Input Criteria
 def filter_partner_universities(
     universities: List[str], input_dict: dict
 ) -> List[dict]:
-    """
-    Filter partner universities based on input criteria (languages, GPA).
-    Returns a list of universities with compatibility information.
+    """Filter partner universities based on input criteria (languages, GPA).
+
+    Args:
+        universities (List[str]): List of university names.
+        input_dict (dict): Dictionary with filter criteria (languages, gpa).
+
+    Returns:
+        List[dict]: List of universities with compatibility information.
     """
     if not universities:
         return []
 
-    # Join list of universities for the prompt
     university_list = "\n".join(universities)
     student_languages = ", ".join(input_dict["languages"])
 
@@ -226,24 +281,18 @@ def filter_partner_universities(
         }
     )
 
-    # Process the returned JSON
     import json
-
     try:
-        # The LLM might wrap the response in ```json and ``` or other formatting
         response_text = result.content.strip()
         if "```" in response_text:
-            # Extract content between code blocks
             response_text = response_text.split("```")[1]
             if response_text.startswith("json"):
                 response_text = response_text[4:].strip()
-
-        # Try to parse the JSON
         filtered_universities = json.loads(response_text)
         if not isinstance(filtered_universities, list):
             filtered_universities = [filtered_universities]  # Handle single object
-
         return filtered_universities
+    
     except json.JSONDecodeError as e:
         print(f"Error parsing LLM response: {e}")
         print(f"Response was: {response_text}")
@@ -251,21 +300,19 @@ def filter_partner_universities(
 
 
 def search_university_image(university_name: str) -> str:
-    """
-    Perform a DuckDuckGo search to find an image link for the university.
-    Returns a URL to an image of the university.
+    """Perform a DuckDuckGo search to find an image link for the university.
+
+    Args:
+        university_name (str): The name of the university.
+
+    Returns:
+        str: URL to an image of the university, or None if not found.
     """
     try:
-        # Import the DuckDuckGo search library
         from duckduckgo_search import DDGS
-
-        # Initialize the DuckDuckGo search client
         ddgs = DDGS()
-
-        # Search for campus images
         query = f"{university_name} university campus"
         images = list(ddgs.images(query, max_results=5))
-
         for image in images:
             if image and "image" in image and image["image"]:
                 # Verify it's an image URL
@@ -274,18 +321,22 @@ def search_university_image(university_name: str) -> str:
                     for ext in [".jpg", ".jpeg", ".png", ".gif"]
                 ):
                     return image["image"]
-
-        # If still no results, return None
         return None
+    
     except Exception as e:
         print(f"Error searching for image: {str(e)}")
         return None
 
 
 def get_university_details(university_name: str, student_languages: List[str]) -> dict:
-    """
-    Use LLM to generate comprehensive details about a university,
-    and search for a real image of the university.
+    """Use LLM to generate comprehensive details about a university and search for a real image.
+
+    Args:
+        university_name (str): Name of the university.
+        student_languages (List[str]): List of languages the student knows.
+
+    Returns:
+        dict: Dictionary with university details, including title, description, image URL, student count, ranking, and languages.
     """
     template = """
     Provide comprehensive information about {university_name} in JSON format.
@@ -316,34 +367,23 @@ def get_university_details(university_name: str, student_languages: List[str]) -
         }
     )
 
-    # Process the returned JSON
     import json
-
     try:
-        # The LLM might wrap the response in ```json and ``` or other formatting
         response_text = result.content.strip()
         if "```" in response_text:
-            # Extract content between code blocks
             response_text = response_text.split("```")[1]
             if response_text.startswith("json"):
                 response_text = response_text[4:].strip()
-
-        # Try to parse the JSON
         university_data = json.loads(response_text)
-
-        # Search for a real image of the university
         university_data["image"] = search_university_image(university_name)
-
         return university_data
+    
     except json.JSONDecodeError as e:
         print(f"Error parsing LLM response for {university_name}: {e}")
-        # Return a minimal fallback object if parsing fails
         return {
             "title": university_name,
             "description": "Information unavailable",
-            "image": search_university_image(
-                university_name
-            ),  # Still try to get an image
+            "image": search_university_image(university_name),
             "student_count": 0,
             "ranking": "unknown",
             "languages": [],
@@ -351,13 +391,26 @@ def get_university_details(university_name: str, student_languages: List[str]) -
 
 
 class Agent:
-    """Base class for all agents in the system."""
+    """Base class for all agents in the system.
+
+    Attributes:
+        name (str): The name of the agent.
+    """
 
     def __init__(self, name: str):
+        """Initialize the agent.
+
+        Args:
+            name (str): The agent's name.
+        """
         self.name = name
 
     def run(self, *args, **kwargs):
-        """Run the agent with the given inputs."""
+        """Run the agent with the given inputs.
+
+        Raises:
+            NotImplementedError: If the method is not implemented in a subclass.
+        """
         raise NotImplementedError("Subclasses must implement this method")
 
 
@@ -365,27 +418,22 @@ class SearchAgent(Agent):
     """Agent responsible for searching and finding partner universities."""
 
     def __init__(self):
+        """Initialize the SearchAgent."""
         super().__init__("SearchAgent")
 
     def run(self, input_dict: Dict[str, Any]) -> List[str]:
-        """
-        Search for partner universities based on the input criteria.
+        """Search for partner universities based on the input criteria.
 
         Args:
-            input_dict: Dictionary containing university, major, etc.
+            input_dict (Dict[str, Any]): Dictionary containing university, major, etc.
 
         Returns:
-            List of university names
+            List[str]: List of university names.
         """
         print(f"[{self.name}] Searching for partner universities...")
-
-        # Get university base URL
         university_url = get_university_base_url(input_dict["university"])
-
-        # Create search query with university name, major and add base URL
         query = f"{input_dict['university']} {input_dict['major']} (Erasmus) Partner Universitäten {university_url}"
         print(f"[{self.name}] Search query: {query}")
-
         results = google(query)
 
         if not results:
@@ -396,7 +444,6 @@ class SearchAgent(Agent):
         print(f"[{self.name}] Processing search results...")
         universities_text = find_partner_universities_from_results(results, query)
 
-        # Extract just the list of universities
         if "Partner universities found:" in universities_text:
             university_lines = (
                 universities_text.split("Partner universities found:")[1]
@@ -406,13 +453,9 @@ class SearchAgent(Agent):
             university_list = [
                 u.strip() for u in university_lines.split("\n") if u.strip()
             ]
-
-            # Limit to 8 universities
             university_list = university_list[:8]
-
             print(f"[{self.name}] Found {len(university_list)} partner universities")
             return university_list
-
         print(f"[{self.name}] No partner universities found")
         return []
 
@@ -421,53 +464,54 @@ class DetailAgent(Agent):
     """Agent responsible for retrieving detailed information about universities."""
 
     def __init__(self):
+        """Initialize the DetailAgent."""
         super().__init__("DetailAgent")
 
     def run(self, university_name: str, student_languages: List[str]) -> Dict[str, Any]:
-        """
-        Get detailed information about a university.
+        """Get detailed information about a university.
 
         Args:
-            university_name: Name of the university
-            student_languages: List of languages the student knows
+            university_name (str): Name of the university.
+            student_languages (List[str]): List of languages the student knows.
 
         Returns:
-            Dictionary with university details
+            Dict[str, Any]: Dictionary with university details.
         """
         print(f"[{self.name}] Getting details for {university_name}...")
         return get_university_details(university_name, student_languages)
 
 
 class MultiAgentUniSearchSystem:
-    """Coordinator for the multiagent system."""
+    """Coordinator for the multiagent system.
+
+    Attributes:
+        search_agent (SearchAgent): Agent for searching universities.
+        detail_agent (DetailAgent): Agent for retrieving university details.
+    """
 
     def __init__(self):
+        """Initialize the MultiAgentUniSearchSystem."""
         self.search_agent = SearchAgent()
         self.detail_agent = DetailAgent()
 
     def run(self, input_dict: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """
-        Run the multiagent system to search for partner universities and get details.
+        """Run the multiagent system to search for partner universities and get details.
 
         Args:
-            input_dict: Dictionary with input parameters
+            input_dict (Dict[str, Any]): Dictionary with input parameters.
 
         Returns:
-            List of dictionaries with university details
+            List[Dict[str, Any]]: List of dictionaries with university details.
         """
         print("Starting multiagent system...")
-
         university_names = self.search_agent.run(input_dict)
-
         if not university_names:
             print("No partner universities found to get details for")
             return []
-
         results = []
         for uni_name in university_names:
             uni_details = self.detail_agent.run(uni_name, input_dict["languages"])
             results.append(uni_details)
-
         print(
             f"Multiagent system completed. Found details for {len(results)} universities"
         )
@@ -475,12 +519,14 @@ class MultiAgentUniSearchSystem:
 
 
 def search_partner_universities(input_dict: dict) -> List[dict]:
-    """
-    Search for partner universities based on input criteria and return filtered results.
-    Returns a list of dictionaries with university information including title, description,
-    image URL, student count, ranking, and languages.
+    """Search for partner universities based on input criteria and return filtered results.
 
-    This function now uses the multiagent system internally.
+    Args:
+        input_dict (dict): Dictionary with search criteria.
+
+    Returns:
+        List[dict]: List of dictionaries with university information including title,
+            description, image URL, student count, ranking, and languages.
     """
     multiagent_system = MultiAgentUniSearchSystem()
     return multiagent_system.run(input_dict)
@@ -496,7 +542,6 @@ if __name__ == "__main__":
     }
 
     results = search_partner_universities(input_dict)
-
     if results:
         print("\nPartner universities matching your criteria:")
         for uni in results:
