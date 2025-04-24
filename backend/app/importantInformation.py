@@ -1,7 +1,7 @@
 import os
 import time
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List
 import requests
 from bs4 import BeautifulSoup
 from googlesearch import search
@@ -11,6 +11,8 @@ from secrets_ import AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_D
 import threading
 from functools import partial
 
+
+# LLM initialization
 llm = AzureChatOpenAI(
     deployment_name=AZURE_OPENAI_DEPLOYMENT_NAME,
     openai_api_key=AZURE_OPENAI_API_KEY,
@@ -20,15 +22,29 @@ llm = AzureChatOpenAI(
 
 # Set timeout for requests
 TIMEOUT = 10  # seconds
-
 class TimeoutError(Exception):
     pass
 
 def timeout_handler():
+    """Raise a TimeoutError to interrupt long-running operations."""
     raise TimeoutError("Operation timed out")
 
 def run_with_timeout(func, *args, timeout=TIMEOUT, **kwargs):
-    """Run a function with a timeout."""
+    """Execute a function with a specified timeout.
+    
+    Args:
+        func: Target function to execute
+        *args: Positional arguments for the function
+        timeout: Maximum execution time in seconds (default: 25)
+        **kwargs: Keyword arguments for the function
+        
+    Returns:
+        Any: Return value from the target function
+        
+    Raises:
+        TimeoutError: If execution exceeds timeout
+        Exception: Propagates any exception from the target function
+    """
     result = [None]
     exception = [None]
     
@@ -51,14 +67,32 @@ def run_with_timeout(func, *args, timeout=TIMEOUT, **kwargs):
     
     return result[0]
 
+
 @dataclass
 class SearchResult:
+    """Represents a search result with title, URL, and snippet.
+    
+    Attributes:
+        title: Result title from search engine
+        url: Full URL of the result
+        snippet: Preview text from search engine
+    """
     title: str
     url: str
     snippet: str
 
+
 def google_search_with_timeout(query: str, num_results: int = 2, timeout: int = TIMEOUT) -> List[SearchResult]:
-    """Perform a Google search with timeout."""
+    """Perform a Google search with timeout protection.
+    
+    Args:
+        query: Search query string
+        num_results: Number of results to return (default: 2)
+        timeout: Maximum execution time in seconds (default: 25)
+        
+    Returns:
+        List[SearchResult]: Search results as objects
+    """
     try:
         def search_func():
             return list(search(query, advanced=True, num_results=num_results))
@@ -75,17 +109,27 @@ def google_search_with_timeout(query: str, num_results: int = 2, timeout: int = 
         print(f"Error during Google search: {str(e)}")
         return []
 
+
 def scrape_text_from_url(url: str, max_length: int = 5000, timeout: int = TIMEOUT) -> str:
-    """Scrape text content from a URL with timeout."""
+    """Extract text content from a webpage with safety limits.
+    
+    Args:
+        url: Target URL to scrape
+        max_length: Maximum characters to return (default: 5000)
+        timeout: Request timeout in seconds (default: 25)
+        
+    Returns:
+        str: Extracted text content (truncated if needed)
+    """
     try:
         response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=timeout)
         soup = BeautifulSoup(response.text, "html.parser")
-        
-        # Get text and limit its length
         text = soup.get_text()
+        
         if len(text) > max_length:
             text = text[:max_length] + "... [Content truncated]"
         return text
+    
     except requests.Timeout:
         print(f"Request timed out for URL: {url}")
         return ""
@@ -94,14 +138,24 @@ def scrape_text_from_url(url: str, max_length: int = 5000, timeout: int = TIMEOU
         return ""
 
 def analyze_content_with_llm(text: str, analysis_prompt: str, max_chunk_size: int = 30000) -> str:
-    """Analyze content using the LLM with a specific prompt, handling large texts in chunks."""
+    """Analyze text content using LLM with chunk processing.
+    
+    Args:
+        text: Input text to analyze
+        analysis_prompt: Prompt template for the LLM
+        max_chunk_size: Maximum text size per chunk (default: 30000)
+        
+    Returns:
+        str: Combined analysis result from LLM
+        
+    Notes:
+        Splits large texts into chunks and performs meta-analysis
+    """
     try:
-        # Split text into chunks if it's too long
         if len(text) > max_chunk_size:
             chunks = [text[i:i+max_chunk_size] for i in range(0, len(text), max_chunk_size)]
             all_analyses = []
             
-            # First analyze each chunk separately
             for i, chunk in enumerate(chunks):
                 print(f"Analyzing chunk {i+1}/{len(chunks)}...")
                 prompt = ChatPromptTemplate.from_template(analysis_prompt)
@@ -109,7 +163,6 @@ def analyze_content_with_llm(text: str, analysis_prompt: str, max_chunk_size: in
                 result = chain.invoke({"text": chunk})
                 all_analyses.append(result.content)
             
-            # If we have multiple analyses, create a meta-analysis to integrate them
             if len(all_analyses) > 1:
                 print("Creating integrated summary from all chunks...")
                 meta_prompt = """
@@ -133,22 +186,29 @@ def analyze_content_with_llm(text: str, analysis_prompt: str, max_chunk_size: in
             chain = prompt | llm
             result = chain.invoke({"text": text})
             return result.content
+    
     except Exception as e:
         print(f"Error during LLM analysis: {str(e)}")
         return ""
 
+
 def campusLife(uni_name: str, subject: str) -> str:
-    """Search and analyze information about campus life and student activities."""
-    print(f"\nSearching for campus life information for {uni_name}...")
+    """Analyze campus life information for a university.
     
-    # Search queries for campus life
+    Args:
+        uni_name: University name to research
+        subject: Study subject for context
+        
+    Returns:
+        str: German language summary of campus life aspects
+    """
+    print(f"\nSearching for campus life information for {uni_name}...")
     queries = [
         f"{uni_name} student life campus activities",
         f"{uni_name} student clubs organizations",
         f"{uni_name} campus facilities {subject}",
         f"{uni_name} student housing accommodation"
     ]
-    
     # Collect all content first
     all_content = []
     max_retries = 2
@@ -173,16 +233,14 @@ def campusLife(uni_name: str, subject: str) -> str:
                         print(f"Error scraping URL: {str(e)}")
                         continue
                     
-                    # Add a small delay between requests
                     time.sleep(1)
-                
                 # If we got here, the query was successful
                 break
             except Exception as e:
                 print(f"Error processing query (attempt {retry + 1}/{max_retries}): {str(e)}")
                 if retry < max_retries - 1:
                     print("Retrying...")
-                    time.sleep(2)  # Wait before retrying
+                    time.sleep(2)
                 else:
                     print("Max retries reached, moving to next query")
     
@@ -191,6 +249,7 @@ def campusLife(uni_name: str, subject: str) -> str:
     
     # Now analyze all collected content at once
     print("\nAnalyzing all campus life content with LLM...")
+    
     analysis_prompt = f"""Analysiere den folgenden Text über Campusleben und studentische Aktivitäten an {uni_name}.
 
 Erstelle eine präzise, informative Zusammenfassung für deutsche Austauschstudierende.
@@ -219,22 +278,28 @@ ZUSAMMENFASSUNG:"""
         result = analyze_content_with_llm(combined_text, analysis_prompt, max_chunk_size=20000)
         print("Campus life analysis completed successfully")
         return result
+    
     except Exception as e:
         print(f"Error during LLM analysis: {str(e)}")
         return "Fehler bei der Analyse des Campuslebens."
 
 def rankingAndResearchAreas(uni_name: str, subject: str) -> str:
-    """Search and analyze information about university rankings and research areas."""
-    print(f"\nSearching for ranking and research information for {uni_name} in {subject}...")
+    """Analyze academic rankings and research areas for a university.
     
-    # Search queries for rankings and research
+    Args:
+        uni_name: University name to research
+        subject: Study subject for context
+        
+    Returns:
+        str: German language summary of academic information
+    """
+    print(f"\nSearching for ranking and research information for {uni_name} in {subject}...")
     queries = [
         f"{uni_name} {subject} department research areas",
         f"{uni_name} {subject} THE ranking",
         f"{uni_name} {subject} research centers",
         f"{uni_name} {subject} academic reputation"
     ]
-    
     # Collect all content first
     all_content = []
     max_retries = 2
@@ -258,25 +323,21 @@ def rankingAndResearchAreas(uni_name: str, subject: str) -> str:
                     except Exception as e:
                         print(f"Error scraping URL: {str(e)}")
                         continue
-                    
-                    # Add a small delay between requests
+            
                     time.sleep(1)
-                
-                # If we got here, the query was successful
                 break
             except Exception as e:
                 print(f"Error processing query (attempt {retry + 1}/{max_retries}): {str(e)}")
                 if retry < max_retries - 1:
                     print("Retrying...")
-                    time.sleep(2)  # Wait before retrying
+                    time.sleep(2)
                 else:
                     print("Max retries reached, moving to next query")
     
     if not all_content:
         return "Keine Informationen zu Rankings und Forschungsbereichen gefunden."
-    
-    # Now analyze all collected content at once
     print("\nAnalyzing all ranking and research content with LLM...")
+    
     analysis_prompt = f"""Analysiere den folgenden Text über Rankings und Forschungsbereiche an {uni_name} im Fach {subject}.
 
 Erstelle eine faktenbasierte, präzise Zusammenfassung für Austauschstudierende.
@@ -301,13 +362,22 @@ ZUSAMMENFASSUNG:"""
         result = analyze_content_with_llm(combined_text, analysis_prompt, max_chunk_size=20000)
         print("Ranking and research analysis completed successfully")
         return result
+    
     except Exception as e:
         print(f"Error during LLM analysis: {str(e)}")
         return "Fehler bei der Analyse der Rankings und Forschungsbereiche."
 
 
 def main(uni_name: str, subject: str):
-    """Main function to gather all information."""
+    """Orchestrate information gathering process.
+    
+    Args:
+        uni_name: Target university name
+        subject: Study subject for context
+        
+    Returns:
+        tuple[str, str]: Campus life and academic information summaries
+    """
     print("\n=== Campusleben und Aktivitäten ===")
     campus_info = campusLife(uni_name, subject)
     print(campus_info)
