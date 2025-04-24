@@ -10,7 +10,7 @@ import './ResultsPage.css';
 const DEFAULT_API_URL = 'http://localhost:8000/search_universities';
 
 // Toggle this to use dummy data instead of API calls
-const USE_DUMMY_DATA = true;
+const USE_DUMMY_DATA = false;
 
 // Sample university data for development and testing
 const mockUniversities = [
@@ -75,22 +75,30 @@ const ResultsPage = () => {
     }
 
     try {
-      // In a real application, you would use userData to filter universities
+      const myHeaders = new Headers();
+      myHeaders.append("Content-Type", "application/json");
+
+      // Prepare request body with user preferences
       const raw = JSON.stringify({
+        "university": userData.university || "",
+        "major": userData.major || "",
         "gpa": userData.gpa || 3.5,
         "languages": userData.languages || ["English"],
-        "budgetRange": userData.budgetRange || { min: 10000, max: 50000 },
-        "travelMonths": userData.travelMonths || ["January", "February"]
+        "budget": userData.budget || 1000,
+        "start_month": userData.startMonth || 9,
+        "start_year": userData.startYear || 2024,
+        "end_month": userData.endMonth || 6,
+        "end_year": userData.endYear || 2025
       });
 
-      // Replace with your actual API endpoint
-      const response = await fetch('https://api.yourbackend.com/universities', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: raw
-      });
+      const requestOptions = {
+        method: "POST",
+        headers: myHeaders,
+        body: raw,
+        redirect: "follow"
+      };
+
+      const response = await fetch(DEFAULT_API_URL, requestOptions);
 
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
