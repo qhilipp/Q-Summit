@@ -1,7 +1,6 @@
 import os
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Union
-
 import secrets_
 from googlesearch import search
 from langchain.agents import Tool, initialize_agent
@@ -13,6 +12,8 @@ from langchain_openai import AzureChatOpenAI
 from pydantic import BaseModel, Field
 from tools import content_analysis_tool, google_search_tool
 
+
+# LLM initialization
 llm = AzureChatOpenAI(
     deployment_name=secrets_.AZURE_OPENAI_DEPLOYMENT_NAME,
     openai_api_key=secrets_.AZURE_OPENAI_API_KEY,
@@ -24,9 +25,23 @@ llm = AzureChatOpenAI(
 def review_plan(
     plan: str, home_university: str, target_university: str, major: str
 ) -> Dict:
-    """
-    Reviews the generated plan for completeness, accuracy, and quality.
-    Suggests improvements or identifies missing important information.
+    """Reviews and improves a semester abroad application plan.
+
+    Args:
+        plan (str): The initial application plan to review.
+        home_university (str): Name of the student's home university.
+        target_university (str): Name of the target exchange university.
+        major (str): The student's academic major.
+
+    Returns:
+        dict[str, Any]: Dictionary containing review feedback with keys:
+            - 'strengths': List of plan strengths
+            - 'improvements': List of suggested improvements
+            - 'missing_info': List of missing critical information
+            - 'deadline_check': Boolean indicating deadline validity
+
+    Notes:
+        Uses a reviewer agent with search capabilities to validate information.
     """
     reviewer_agent = initialize_agent(
         [google_search_tool, content_analysis_tool],
@@ -63,8 +78,23 @@ def review_plan(
 def plan_semester_abroad_application(
     home_university: str, target_university: str, major: str
 ) -> Dict:
-    """
-    Plans a semester abroad application for a given home university, target university, and major.
+    """Generates a comprehensive semester abroad application plan.
+
+    Args:
+        home_university (str): Name of the student's home institution.
+        target_university (str): Name of the target exchange university.
+        major (str): The student's academic major.
+
+    Returns:
+        dict[str, Any]: Structured application plan containing:
+            - 'timeline': Key dates and deadlines
+            - 'requirements': List of application requirements
+            - 'financial_plan': Cost breakdown and funding options
+            - 'academic_prep': Course mapping and credit transfer info
+            - 'housing_options': Available housing solutions
+
+    Note:
+        Combines automated research with LLM analysis for optimal results.
     """
     agent = initialize_agent(
         [google_search_tool, content_analysis_tool],
@@ -96,12 +126,10 @@ def plan_semester_abroad_application(
             """
         }
     )
-
-    # After getting the initial plan, pass it to the reviewer
+    
     plan_result = result["output"]
     review_result = review_plan(plan_result, home_university, target_university, major)
-
-    # Incorporate review feedback into final plan
+    
     final_plan_agent = initialize_agent(
         [],
         llm,
@@ -128,8 +156,24 @@ def plan_semester_abroad_application(
 
 
 def make_markdown_from_plan(plan: str) -> str:
-    """
-    Let llm make a markdown document from the plan to give a good overview.
+    """Converts an application plan into a structured Markdown document.
+
+    Args:
+        plan (str): Raw text of the application plan.
+
+    Returns:
+        str: Well-formatted Markdown document with:
+            - Hierarchical headers
+            - Checklists and timelines
+            - Highlighted key information
+            - Tables for complex data
+            - Emphasis on critical dates/requirements
+
+    Example:
+        Returns markdown with sections like:
+        # Application Timeline
+        ## 6 Months Before Departure
+        - [ ] Submit initial paperwork...
     """
     template = """
     You are an expert Markdown writer. Convert the following study abroad application plan into a 
@@ -150,9 +194,7 @@ def make_markdown_from_plan(plan: str) -> str:
 
     prompt = ChatPromptTemplate.from_template(template)
     chain = prompt | llm
-
     result = chain.invoke({"plan": plan})
-
     return result.content
 
 
