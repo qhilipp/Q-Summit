@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Any, Dict, List
+
 import requests
 import secrets_
 from bs4 import BeautifulSoup
@@ -7,7 +8,6 @@ from googlesearch import search
 from langchain.prompts import ChatPromptTemplate
 from langchain_community.tools import Tool
 from langchain_openai import AzureChatOpenAI
-
 
 # LLM initialization
 llm = AzureChatOpenAI(
@@ -21,7 +21,7 @@ llm = AzureChatOpenAI(
 @dataclass
 class SearchResult:
     """Represents a search result with title, URL and snippet.
-    
+
     Attributes:
         title (str): The title of the search result.
         url (str): The URL of the search result.
@@ -282,6 +282,7 @@ def filter_partner_universities(
     )
 
     import json
+
     try:
         response_text = result.content.strip()
         if "```" in response_text:
@@ -292,7 +293,7 @@ def filter_partner_universities(
         if not isinstance(filtered_universities, list):
             filtered_universities = [filtered_universities]  # Handle single object
         return filtered_universities
-    
+
     except json.JSONDecodeError as e:
         print(f"Error parsing LLM response: {e}")
         print(f"Response was: {response_text}")
@@ -310,6 +311,7 @@ def search_university_image(university_name: str) -> str:
     """
     try:
         from duckduckgo_search import DDGS
+
         ddgs = DDGS()
         query = f"{university_name} university campus"
         images = list(ddgs.images(query, max_results=5))
@@ -322,7 +324,7 @@ def search_university_image(university_name: str) -> str:
                 ):
                     return image["image"]
         return None
-    
+
     except Exception as e:
         print(f"Error searching for image: {str(e)}")
         return None
@@ -368,6 +370,7 @@ def get_university_details(university_name: str, student_languages: List[str]) -
     )
 
     import json
+
     try:
         response_text = result.content.strip()
         if "```" in response_text:
@@ -377,7 +380,7 @@ def get_university_details(university_name: str, student_languages: List[str]) -
         university_data = json.loads(response_text)
         university_data["image"] = search_university_image(university_name)
         return university_data
-    
+
     except json.JSONDecodeError as e:
         print(f"Error parsing LLM response for {university_name}: {e}")
         return {
@@ -434,7 +437,7 @@ class SearchAgent(Agent):
         university_url = get_university_base_url(input_dict["university"])
         query = f"{input_dict['university']} {input_dict['major']} (Erasmus) Partner Universitäten {university_url}"
         print(f"[{self.name}] Search query: {query}")
-        results = google(query)
+        results = google(query, num_results=8)
 
         if not results:
             print(f"[{self.name}] No search results found")
