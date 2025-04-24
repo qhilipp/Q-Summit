@@ -1,6 +1,6 @@
 # Bring Me **AI**BROAD @ Q-Hack 2025 🇩🇪 
 
-## Let Agents Take You Further Abroad ✈️🌍 
+## Let 🤖 AI Agents Take You Further Abroad ✈️🌍 
 Studying abroad can be a life-changing experience, but navigating the complex application process often proves daunting, especially for first-generation academics who lack support. Our solution aims to bridge this gap by providing an accessible platform that helps students from all backgrounds find and apply to study abroad programs efficiently.
 
 ### Problem Statement & Solution
