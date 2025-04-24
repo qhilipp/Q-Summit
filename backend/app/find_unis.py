@@ -437,7 +437,7 @@ class SearchAgent(Agent):
         university_url = get_university_base_url(input_dict["university"])
         query = f"{input_dict['university']} {input_dict['major']} (Erasmus) Partner Universitäten {university_url}"
         print(f"[{self.name}] Search query: {query}")
-        results = google(query, num_results=6)
+        results = google(query, num_results=3)
 
         if not results:
             print(f"[{self.name}] No search results found")
