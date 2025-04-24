@@ -3,10 +3,48 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { useUserData } from '../../context/UserDataContext';
 import UniversityCard from '../UniversityCard/UniversityCard';
+import UniversityDetailsPopup from '../UniversityDetailsPopup/UniversityDetailsPopup';
 import './ResultsPage.css';
 
 // This is the endpoint for university search
 const DEFAULT_API_URL = 'http://localhost:8000/search_universities';
+
+// Toggle this to use dummy data instead of API calls
+const USE_DUMMY_DATA = true;
+
+// Sample university data for development and testing
+const mockUniversities = [
+  {
+    title: "University of the Fraser Valley",
+    description: "The University of the Fraser Valley (UFV) is a public university located in Abbotsford, British Columbia, Canada. Known for its strong emphasis on student success and community engagement, UFV offers a wide range of undergraduate and graduate programs.",
+    image: "https://cuebc.org/wp-content/uploads/2020/09/4292864791_84b79af7ca_b.jpg",
+    student_count: 15000,
+    ranking: "mid",
+    gpa: 3.0,
+    terms: ["Fall", "Spring", "Summer"],
+    languages: ["English"],
+  },
+  {
+    title: "University of British Columbia",
+    description: "The University of British Columbia is a public research university with campuses in Vancouver and Kelowna, British Columbia. Established in 1908, it is British Columbia's oldest university.",
+    image: "https://www.columbia.edu/content/sites/default/files/styles/cu_crop/public/content/Morningside%20Campus%20at%20Dusk%202.jpg?itok=SkwvzD5S",
+    student_count: 65000,
+    ranking: "high",
+    gpa: 3.5,
+    terms: ["Fall", "Spring"],
+    languages: ["English", "French"],
+  },
+  {
+    title: "University of Alberta",
+    description: "The University of British Columbia is a public research university with campuses in Vancouver and Kelowna, British Columbia. Established in 1908, it is British Columbia's oldest university.",
+    image: "https://www.ualberta.ca/en/university-relations/media-library/community-relations/photos/12784-06-115-athabasca02.png",
+    student_count: 65000,
+    ranking: "low",
+    gpa: 2.5,
+    terms: ["Summer", "Spring"],
+    languages: ["Spanish", "French"],
+  }
+];
 
 const ResultsPage = () => {
   const navigate = useNavigate();
@@ -15,51 +53,68 @@ const ResultsPage = () => {
   const [universities, setUniversities] = useState([]);
   const [error, setError] = useState('');
   const scrollContainerRef = useRef(null);
+  const [selectedUniversity, setSelectedUniversity] = useState(null);
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
 
   useEffect(() => {
-    const fetchUniversities = async () => {
-      try {
-        const headers = new Headers();
-        headers.append("Content-Type", "application/json");
-
-        // Use userData from context instead of hardcoded values
-        const requestOptions = {
-          method: "POST",
-          headers: headers,
-          body: JSON.stringify(userData),
-          redirect: "follow"
-        };
-
-        // Show loading state
-        setIsLoading(true);
-        
-        const response = await fetch(DEFAULT_API_URL, requestOptions);
-        
-        if (!response.ok) {
-          throw new Error(`Error ${response.status}: ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        setUniversities(result);
-        setError('');
-      } catch (error) {
-        console.error("Error fetching universities:", error);
-        setError('Failed to fetch university matches. Please try again.');
-        setUniversities([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     // Call API when component mounts
     fetchUniversities();
   }, [userData]);
 
+  const fetchUniversities = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    if (USE_DUMMY_DATA) {
+      // Simulate loading delay when using dummy data
+      setTimeout(() => {
+        setUniversities(mockUniversities);
+        setIsLoading(false);
+      }, 1500);
+      return;
+    }
+
+    try {
+      // In a real application, you would use userData to filter universities
+      const raw = JSON.stringify({
+        "gpa": userData.gpa || 3.5,
+        "languages": userData.languages || ["English"],
+        "budgetRange": userData.budgetRange || { min: 10000, max: 50000 },
+        "travelMonths": userData.travelMonths || ["January", "February"]
+      });
+
+      // Replace with your actual API endpoint
+      const response = await fetch('https://api.yourbackend.com/universities', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: raw
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setUniversities(data);
+    } catch (err) {
+      console.error("Error fetching universities:", err);
+      setError(err.message || "Failed to fetch university matches");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleUniversityClick = (university) => {
-    // Handle university selection (can be expanded later)
+    // Handle university selection and show popup
     console.log('Selected university:', university);
-    // Navigate to university info or detail page
-    navigate('/university');
+    setSelectedUniversity(university);
+    setIsPopupOpen(true);
+  };
+
+  const closePopup = () => {
+    setIsPopupOpen(false);
   };
 
   const containerVariants = {
@@ -88,47 +143,59 @@ const ResultsPage = () => {
   };
 
   return (
-    <motion.div
-      className="results-container"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      <motion.h1 className="results-heading" variants={titleVariants}>
-        {isLoading ? "We're looking for your perfect universities" : "Your University Matches 🏫❤️🧑‍🎓"}
-      </motion.h1>
+    <>
+      <motion.div
+        className="results-container"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.h1 className="results-heading" variants={titleVariants}>
+          {isLoading ? "We're looking for your perfect universities" : "Your University Matches 🏫❤️🧑‍🎓"}
+          {USE_DUMMY_DATA && <span className="dummy-data-badge">Demo Mode</span>}
+        </motion.h1>
 
-      {isLoading ? (
-        <div className="spinner-container">
-          <div className="spinner"></div>
-          <p className="loading-text">Analyzing your preferences...</p>
-        </div>
-      ) : error ? (
-        <div className="error-container">
-          <p className="error-message">{error}</p>
-          <button className="retry-button" onClick={() => navigate('/travel-months')}>
-            Try Again
-          </button>
-        </div>
-      ) : (
-        <div className="results-content">
-          <div className="universities-scroll-container" ref={scrollContainerRef}>
-            <div className="universities-list">
-              {universities.map((university, index) => (
-                <UniversityCard 
-                  key={index}
-                  university={university}
-                  onClick={() => handleUniversityClick(university)}
-                />
-              ))}
-              {universities.length === 0 && (
-                <p className="no-results">No matches found. Try adjusting your preferences.</p>
-              )}
+        {isLoading ? (
+          <div className="spinner-container">
+            <div className="spinner"></div>
+            <p className="loading-text">Analyzing your preferences...</p>
+          </div>
+        ) : error ? (
+          <div className="error-container">
+            <p className="error-message">{error}</p>
+            <button className="retry-button" onClick={() => navigate('/travel-months')}>
+              Try Again
+            </button>
+          </div>
+        ) : (
+          <div className="results-content">
+            <div className="universities-scroll-container" ref={scrollContainerRef}>
+              <div className="universities-list">
+                {universities.map((university, index) => (
+                  <UniversityCard 
+                    key={index}
+                    university={university}
+                    onClick={() => handleUniversityClick(university)}
+                  />
+                ))}
+                {universities.length === 0 && (
+                  <p className="no-results">No matches found. Try adjusting your preferences.</p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
+      </motion.div>
+
+      {/* University Details Popup */}
+      {selectedUniversity && (
+        <UniversityDetailsPopup 
+          university={selectedUniversity}
+          isOpen={isPopupOpen}
+          onClose={closePopup}
+        />
       )}
-    </motion.div>
+    </>
   );
 };
 

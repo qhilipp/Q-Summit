@@ -1,127 +1,146 @@
-import { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import './UniversityCard.css';
 
 const UniversityCard = ({ university, onClick }) => {
-  // Function to get flag emoji for language
+  const navigate = useNavigate();
+
   const getLanguageFlag = (language) => {
-    const languageFlags = {
+    const flags = {
       'English': '🇬🇧',
       'German': '🇩🇪',
       'French': '🇫🇷',
       'Spanish': '🇪🇸',
       'Italian': '🇮🇹',
-      'Japanese': '🇯🇵',
       'Chinese': '🇨🇳',
-      'Russian': '🇷🇺',
-      'Portuguese': '🇵🇹',
+      'Japanese': '🇯🇵',
       'Korean': '🇰🇷',
-      'Arabic': '🇸🇦',
+      'Russian': '🇷🇺',
+      'Arabic': '🇦🇪',
+      'Portuguese': '🇵🇹',
       'Dutch': '🇳🇱',
       'Swedish': '🇸🇪',
-      'Greek': '🇬🇷',
-      'Turkish': '🇹🇷',
-      'Polish': '🇵🇱',
       'Norwegian': '🇳🇴',
       'Finnish': '🇫🇮',
-      'Danish': '🇩🇰'
+      'Danish': '🇩🇰',
+      'Turkish': '🇹🇷',
+      'Polish': '🇵🇱',
+      'Czech': '🇨🇿',
+      'Greek': '🇬🇷',
+      'Hungarian': '🇭🇺',
     };
-    
-    return languageFlags[language] || '🌐';
+    return flags[language] || '🌐';
   };
 
-  // Function to get label for ranking
   const getRankingLabel = (ranking) => {
-    if (typeof ranking === 'number') {
-      return `#${ranking}`;
-    }
-    
-    const rankingLabels = {
-      'high': 'Top Tier',
-      'mid': 'Mid Tier',
-      'low': 'Developing'
-    };
-    
-    return rankingLabels[ranking] || ranking;
+    if (ranking === 'high') return 'High';
+    if (ranking === 'mid') return 'Mid';
+    if (ranking === 'low') return 'Low';
+    return ranking;
   };
 
-  // Truncate description
+  const getRankingClass = (ranking) => {
+    return `rating-chip ${ranking}`;
+  };
+
   const truncateDescription = (text, maxLength = 120) => {
-    if (!text || text.length <= maxLength) return text || '';
-    return text.substr(0, maxLength) + '...';
+    if (!text || text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  };
+
+  const getTermEmoji = (term) => {
+    const emojis = {
+      'Fall': '🍂',
+      'Spring': '🌸',
+      'Summer': '☀️',
+      'Winter': '❄️'
+    };
+    return emojis[term] || '📅';
+  };
+
+  const formatCost = (cost) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0,
+    }).format(cost);
+  };
+
+  const handleSelect = (e) => {
+    e.stopPropagation(); // Prevent card click event from firing
+    navigate(`/university/${university.id}`);
   };
 
   return (
     <motion.div 
       className="university-card"
-      onClick={onClick}
-      transition={{ duration: 0.3 }}
+      onClick={() => onClick(university)}
+      whileHover={{ 
+        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
+        border: '1px solid rgba(255, 255, 255, 0.5)'
+      }}
+      transition={{ duration: 0.2 }}
     >
       <h3 className="university-title">{university.title}</h3>
       
-      <div className="image-carousel">
-        {university.image ? (
-          <div className="carousel-image-container">
-            <img 
-              src={university.image} 
-              alt={university.title} 
-              className="carousel-image"
-            />
-          </div>
-        ) : university.images && university.images.length > 0 ? (
-          <div className="carousel-image-container">
-            <img 
-              src={university.images[0]} 
-              alt={university.title} 
-              className="carousel-image"
-            />
-          </div>
-        ) : (
-          <div className="placeholder-image">
-            <span>No Image Available</span>
-          </div>
-        )}
+      <div className="image-container">
+        <img 
+          src={university.image} 
+          alt={university.title}
+          className="university-image"
+        />
       </div>
       
       <div className="university-details">
+        <p className="university-description">{truncateDescription(university.description)}</p>
+        
         <div className="university-stats">
-          <div className="stat">
+          <div className="stat-item">
             <span className="stat-icon">🏆</span>
             <span className="stat-label">Ranking</span>
-            <span className="stat-value">{getRankingLabel(university.ranking)}</span>
+            <span className={`stat-value ${getRankingClass(university.ranking)}`}>
+              {getRankingLabel(university.ranking)}
+            </span>
           </div>
-          <div className="stat">
+          <div className="stat-item">
             <span className="stat-icon">👨‍🎓</span>
             <span className="stat-label">Students</span>
             <span className="stat-value">{university.student_count.toLocaleString()}</span>
           </div>
+          <div className="stat-item">
+            <span className="stat-icon">📊</span>
+            <span className="stat-label">Min. GPA</span>
+            <span className="stat-value">{university.gpa.toFixed(1)}</span>
+          </div>
         </div>
         
-        <p className="university-description">{truncateDescription(university.description)}</p>
+        <div className="university-terms">
+          <h4 className="section-label">Terms</h4>
+          <div className="terms-list">
+            {university.terms.map((term, index) => (
+              <span key={index} className="term-badge">
+                {getTermEmoji(term)} {term}
+              </span>
+            ))}
+          </div>
+        </div>
         
-        <div className="university-meta">
-          <div className="meta-item">
-            <span className="meta-label">Languages</span>
-            <div className="terms-list">
-              {university.languages ? (
-                // New format - array of languages
-                university.languages.map((lang, index) => (
-                  <span key={index} className="term-badge">
-                    {lang} {getLanguageFlag(lang)}
-                  </span>
-                ))
-              ) : university.language ? (
-                // Old format - single language
-                <span className="language-chip">
-                  {university.language} {getLanguageFlag(university.language)}
-                </span>
-              ) : (
-                <span className="language-chip">Not specified</span>
-              )}
-            </div>
+        <div className="university-language">
+          <h4 className="section-label">Language</h4>
+          <div className="languages-list">
+            {university.languages.map((language, index) => (
+              <span key={index} className="language-badge">
+                {getLanguageFlag(language)} {language}
+              </span>
+            ))}
           </div>
         </div>
       </div>
+
+      <button className="select-button" onClick={handleSelect}>
+        Select University →
+      </button>
     </motion.div>
   );
 };

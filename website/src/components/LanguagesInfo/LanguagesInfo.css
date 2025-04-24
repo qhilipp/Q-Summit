@@ -76,7 +76,6 @@
   right: 0;
   background-color: rgba(30, 30, 30, 0.85);
   backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(45, 45, 45, 0.5);
   border-radius: 8px;
   margin-top: 0.5rem;
