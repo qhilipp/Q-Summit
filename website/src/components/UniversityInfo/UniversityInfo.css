@@ -66,11 +66,12 @@
   padding: 1rem;
   cursor: pointer;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   transition: background-color 0.2s ease;
-  border-bottom: 1px solid rgba(45, 45, 45, 0.3);
+  border-bottom: 3px solid rgba(45, 45, 45, 0.5);
   text-align: left;
+  gap: 1rem;
 }
 
 .suggestion-item:last-child {
@@ -98,6 +99,7 @@
 .university-country {
   color: #c0c0c0;
   font-size: 0.9rem;
+  text-align: left;
 }
 
 .loading-indicator {

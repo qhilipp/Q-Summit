@@ -6,6 +6,7 @@ import LanguagesInfo from '../LanguagesInfo/LanguagesInfo.jsx';
 import BudgetInfo from '../BudgetInfo/BudgetInfo.jsx';
 import TravelMonthsInfo from '../TravelMonthsInfo/TravelMonthsInfo.jsx';
 import ResultsPage from '../ResultsPage/ResultsPage.jsx';
+import UniversityPage from '../UniversityPage/UniversityPage.jsx';
 import './App.css';
 
 // Main application component - updated for hot reload test
@@ -21,6 +22,7 @@ function App() {
         <Route path="/budget" element={<BudgetInfo />} />
         <Route path="/travel-months" element={<TravelMonthsInfo />} />
         <Route path="/results" element={<ResultsPage />} />
+        <Route path="/university/:id" element={<UniversityPage />} />
       </Routes>
     </Router>
   );
