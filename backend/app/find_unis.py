@@ -140,7 +140,7 @@ def find_partner_universities_from_results(
     if not search_results:
         return "No search results provided."
 
-    relevant_results = [r for r in search_results if is_relevant_search_result(r)]
+    relevant_results = [r for r in search_results if is_relevant_search_result(r)][:3]
 
     if not relevant_results:
         return "No relevant search results found for partner universities."
@@ -437,7 +437,7 @@ class SearchAgent(Agent):
         university_url = get_university_base_url(input_dict["university"])
         query = f"{input_dict['university']} {input_dict['major']} (Erasmus) Partner Universitäten {university_url}"
         print(f"[{self.name}] Search query: {query}")
-        results = google(query, num_results=8)
+        results = google(query, num_results=6)
 
         if not results:
             print(f"[{self.name}] No search results found")
