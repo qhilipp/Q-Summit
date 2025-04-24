@@ -1,5 +1,6 @@
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
+from app.deadline_find import find_and_add_deadline
 from app.find_unis import search_partner_universities
 from app.get_uni_details import get_uni_details
 from app.plan_application import (
@@ -128,6 +129,32 @@ def search_universities(input_data: UniversitySearchInput):
     input_dict = input_data.dict()
     results = search_partner_universities(input_dict)
     return results
+
+
+class DeadlineInfoResponse(BaseModel):
+    """Response model for deadline information.
+
+    Attributes:
+        deadlines (str): List of deadline information.
+    """
+
+    deadlines: str
+
+
+@app.post("/get_deadline_info", response_model=DeadlineInfoResponse)
+def get_deadline_info(input_data: UniversitySearchInput):
+    """Get deadline information for universities.
+
+    Args:
+        input_data (dict): Input data containing search criteria.
+
+    Returns:
+        DeadlineInfoResponse: Deadline information.
+    """
+    # Implementation to be added
+    input_dict = input_data.dict()
+    results = find_and_add_deadline(input_dict)
+    return DeadlineInfoResponse(deadlines=results)
 
 
 @app.get(
