@@ -2,6 +2,7 @@ from typing import List, Optional, Union
 
 from app.find_unis import search_partner_universities
 from app.get_uni_details import Quote, get_uni_details
+from app.plan_application3 import make_html_from_plan, plan_semester_abroad_application
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -51,6 +52,19 @@ class UniversityDetailsResponse(BaseModel):
     quotes: List[QuoteModel]
 
 
+# Define model for application plan request
+class ApplicationPlanInput(BaseModel):
+    home_university: str
+    target_university: str
+    major: str
+
+
+# Define model for application plan response
+class ApplicationPlanResponse(BaseModel):
+    plan: str
+    html: str
+
+
 @app.get("/items/{item_id}")
 def read_item(item_id: int, q: Union[str, None] = None):
     return {"item_id": item_id * 2, "q": q}
@@ -94,3 +108,28 @@ def university_details(university_name: str):
             QuoteModel(quote=q.quote, source_link=q.source_link) for q in details.quotes
         ]
     )
+
+
+@app.post("/application_plan", response_model=ApplicationPlanResponse)
+def create_application_plan(input_data: ApplicationPlanInput):
+    """
+    Create a semester abroad application plan with both raw text and HTML formats.
+
+    Args:
+        input_data: ApplicationPlanInput containing home_university, target_university, and major
+
+    Returns:
+        JSON object with both raw plan text and HTML-formatted plan
+    """
+    # Generate the application plan
+    plan = plan_semester_abroad_application(
+        home_university=input_data.home_university,
+        target_university=input_data.target_university,
+        major=input_data.major,
+    )
+
+    # Convert the plan to HTML
+    html_plan = make_html_from_plan(plan)
+
+    # Return both formats
+    return ApplicationPlanResponse(plan=plan, html=html_plan)

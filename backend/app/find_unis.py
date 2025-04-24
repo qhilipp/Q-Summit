@@ -29,9 +29,9 @@ class SearchResult:
 
 
 # Search and Scraping Functions
-def google(query: str) -> List[SearchResult]:
+def google(query: str, num_results: int = 10) -> List[SearchResult]:
     """Perform a Google search and return results as SearchResult objects."""
-    google_search = search(query, advanced=True, num_results=10)
+    google_search = search(query, advanced=True, num_results=num_results)
     return [
         SearchResult(title=result.title, url=result.url, snippet=result.description)
         for result in google_search
