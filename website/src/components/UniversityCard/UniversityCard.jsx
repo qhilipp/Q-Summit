@@ -110,23 +110,7 @@ const UniversityCard = ({ university, onClick }) => {
             <span className="stat-label">Students</span>
             <span className="stat-value">{university.student_count.toLocaleString()}</span>
           </div>
-          {/* <div className="stat-item">
-            <span className="stat-icon">📊</span>
-            <span className="stat-label">Min. GPA</span>
-            <span className="stat-value">{university.gpa.toFixed(1)}</span>
-          </div> */}
         </div>
-        
-        {/* <div className="university-terms">
-          <h4 className="section-label">Terms</h4>
-          <div className="terms-list">
-            {university.terms.map((term, index) => (
-              <span key={index} className="term-badge">
-                {getTermEmoji(term)} {term}
-              </span>
-            ))}
-          </div>
-        </div> */}
         
         <div className="university-language">
           <h4 className="section-label">Language</h4>

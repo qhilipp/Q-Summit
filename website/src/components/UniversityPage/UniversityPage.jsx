@@ -161,35 +161,17 @@ const UniversityPage = () => {
                 <div className="details-stats">
                   <div className="details-stat-item">
                     <span className="details-stat-icon">🏆</span>
-                    <span className="details-stat-label">Ranking</span>
                     <span className={`details-rating-chip ${universityData?.ranking}`}>
                       {getRankingLabel(universityData?.ranking)}
                     </span>
+                    <span className="details-stat-label">Ranking</span>
                   </div>
                   <div className="details-stat-item">
                     <span className="details-stat-icon">👨‍🎓</span>
-                    <span className="details-stat-label">Students</span>
                     <span className="details-stat-value">
                       {universityData?.student_count?.toLocaleString()}
                     </span>
-                  </div>
-                  <div className="details-stat-item">
-                    <span className="details-stat-icon">📊</span>
-                    <span className="details-stat-label">Min. GPA</span>
-                    <span className="details-stat-value">
-                      {universityData?.gpa?.toFixed(1)}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="details-terms">
-                  <h4 className="details-section-label">Terms</h4>
-                  <div className="details-terms-list">
-                    {universityData?.terms?.map((term, index) => (
-                      <span key={index} className="details-term-badge">
-                        {getTermEmoji(term)} {term}
-                      </span>
-                    ))}
+                    <span className="details-stat-label">Students</span>
                   </div>
                 </div>
                 

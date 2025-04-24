@@ -109,10 +109,11 @@
 }
 
 .details-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  padding: 0.5rem;
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0;
+  padding: 0.25rem;
   border-radius: 8px;
 }
 
@@ -120,10 +121,10 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-  flex: 1;
+  gap: 0;
   position: relative;
-  padding-top: 2rem;
+  padding-top: 1.75rem;
+  width: 120px;
 }
 
 .details-stat-icon {
@@ -139,13 +140,15 @@
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.6);
   text-align: center;
+  width: 100%;
 }
 
 .details-stat-value {
   font-size: 1rem;
   font-weight: 500;
   text-align: center;
-  color: #fff;
+  width: 100%;
+  color: #fff !important;
 }
 
 .details-section-label {
