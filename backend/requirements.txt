@@ -12,6 +12,5 @@ faiss-cpu
 googlesearch-python
 bs4
 httpx
-openai
 tiktoken
 python-dotenv
