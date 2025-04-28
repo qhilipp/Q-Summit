@@ -24,20 +24,22 @@ Users are shown the application deadlines for their selected universities to ens
 
 ## 💻🛠️ Technology Stack
 ### Backend (Multi-Agent System)
-- Microsoft Azure
-- LangChain & LangGraph
-- FastAPI
-- HTTP requests
+- Python
+- Microsoft Azure (LLM: Azure OpenAI)
+- LangChain & LangGraph (AI Frameworks for Agent Orchestration)
+- FastAPI (Web Framework for API)
+- HTTP requests (Client-Server Communication)
 ### Frontend (Web App)
-- ReactJS & React Markdown
+- JavaScript (JS) & CSS
+- ReactJS (UI Library) & React Markdown (Markdown Rendering)
+- Vite (Build Tool)
 
 ## Usage (Setup)   
-1. **Secrets Keys** (Azure Credentials):
-   Create a secret_key environment file with following content:
+1. **Secrets Keys** (AzureOpenAI Credentials):
+   Create a environment file (.env) and place it in backend root folder with your API key and Endpoint in "...":
    ```
-   AZURE_OPENAI_API_KEY = "*PLACE YOUR OPENAI API KEY*"
-   AZURE_OPENAI_ENDPOINT = "*PLACE YOUR OPENAI ENDPOINT*"
-   AZURE_OPENAI_DEPLOYMENT_NAME = "*PLACE YOUR DEPLOYMENT NAME*"
+   AZURE_OPENAI_API_KEY = "..."
+   AZURE_OPENAI_ENDPOINT = "..."
    ```
 2. **Docker**:
    Execute command
