@@ -1,22 +1,8 @@
-import time
-from abc import ABC
-from typing import List, Optional
-import requests
-import secrets_
+from typing import List
 from attr import dataclass
 from find_unis import SearchResult, google, scrape_text_from_url
 from langchain.prompts import ChatPromptTemplate
-from langchain_openai import AzureChatOpenAI
-from requests.exceptions import RequestException, Timeout
-
-
-# LLM initialization
-llm = AzureChatOpenAI(
-    deployment_name=secrets_.AZURE_OPENAI_DEPLOYMENT_NAME,
-    openai_api_key=secrets_.AZURE_OPENAI_API_KEY,
-    azure_endpoint=secrets_.AZURE_OPENAI_ENDPOINT,
-    openai_api_version="2023-05-15",
-)
+from tools import llm
 
 
 @dataclass

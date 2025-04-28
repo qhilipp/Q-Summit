@@ -1,21 +1,11 @@
+import requests
 from dataclasses import dataclass
 from typing import Any, Dict, List
-
-import requests
-import secrets_
 from bs4 import BeautifulSoup
 from googlesearch import search
 from langchain.prompts import ChatPromptTemplate
 from langchain_community.tools import Tool
-from langchain_openai import AzureChatOpenAI
-
-# LLM initialization
-llm = AzureChatOpenAI(
-    deployment_name=secrets_.AZURE_OPENAI_DEPLOYMENT_NAME,
-    openai_api_key=secrets_.AZURE_OPENAI_API_KEY,
-    azure_endpoint=secrets_.AZURE_OPENAI_ENDPOINT,
-    openai_api_version="2023-05-15",
-)
+from tools import llm
 
 
 @dataclass
@@ -27,7 +17,6 @@ class SearchResult:
         url (str): The URL of the search result.
         snippet (str): The snippet or description of the search result.2
     """
-
     title: str
     url: str
     snippet: str
@@ -286,7 +275,6 @@ def filter_partner_universities(
     )
 
     import json
-
     try:
         response_text = result.content.strip()
         if "```" in response_text:
@@ -374,7 +362,6 @@ def get_university_details(university_name: str, student_languages: List[str]) -
     )
 
     import json
-
     try:
         response_text = result.content.strip()
         if "```" in response_text:
@@ -403,7 +390,6 @@ class Agent:
     Attributes:
         name (str): The name of the agent.
     """
-
     def __init__(self, name: str):
         """Initialize the agent.
 
@@ -423,7 +409,6 @@ class Agent:
 
 class SearchAgent(Agent):
     """Agent responsible for searching and finding partner universities."""
-
     def __init__(self):
         """Initialize the SearchAgent."""
         super().__init__("SearchAgent")
@@ -469,7 +454,6 @@ class SearchAgent(Agent):
 
 class DetailAgent(Agent):
     """Agent responsible for retrieving detailed information about universities."""
-
     def __init__(self):
         """Initialize the DetailAgent."""
         super().__init__("DetailAgent")
@@ -495,7 +479,6 @@ class MultiAgentUniSearchSystem:
         search_agent (SearchAgent): Agent for searching universities.
         detail_agent (DetailAgent): Agent for retrieving university details.
     """
-
     def __init__(self):
         """Initialize the MultiAgentUniSearchSystem."""
         self.search_agent = SearchAgent()
@@ -547,7 +530,6 @@ if __name__ == "__main__":
         "languages": ["English", "Spanish"],
         "budget": 1000,
     }
-
     results = search_partner_universities(input_dict)
     if results:
         print("\nPartner universities matching your criteria:")

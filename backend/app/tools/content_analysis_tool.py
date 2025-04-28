@@ -1,27 +1,11 @@
-import os
-from dataclasses import dataclass
-from typing import Dict
 import requests
-import secrets_
+from typing import Dict
 from bs4 import BeautifulSoup
-from googlesearch import search
-from langchain.agents import Tool, initialize_agent
 from langchain.agents.agent_types import AgentType
-from langchain.llms import OpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.tools import StructuredTool
-from langchain_openai import AzureChatOpenAI
 from pydantic import BaseModel, Field
-from tools.google_search_tool import google_search_tool
-
-
-# LLM initialization
-llm = AzureChatOpenAI(  
-    deployment_name=secrets_.AZURE_OPENAI_DEPLOYMENT_NAME,
-    openai_api_key=secrets_.AZURE_OPENAI_API_KEY,
-    azure_endpoint=secrets_.AZURE_OPENAI_ENDPOINT,
-    openai_api_version="2023-05-15",
-)
+from tools.utils import llm
 
 
 class ContentAnalysisSchema(BaseModel):
