@@ -36,7 +36,7 @@ Users are shown the application deadlines for their selected universities to ens
 
 ## Usage (Setup)   
 1. **Secrets Keys** (AzureOpenAI Credentials):
-   Create a environment file (.env) and place it in backend root folder with your API key and Endpoint in "...":
+Create a environment file (.env) and place it in backend root folder with your API key and Endpoint in "...":
    ```
    AZURE_OPENAI_API_KEY = "..."
    AZURE_OPENAI_ENDPOINT = "..."
