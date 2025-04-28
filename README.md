@@ -13,15 +13,15 @@ Our platform aggregates relevant information, allowing users to quickly find sui
 ## Features ✨
 ![](./assets/Bring_me_Aibroad_preview.gif) 
 
-- 🔍 **Guided Search**
+1) 🔍 **Guided Search**:
 Users answer a few required questions about their home university and study program to personalize the search results.
-- ⚙️ **Optional Filters**
+2) ⚙️ **Optional Filters**:
 Users can optionally provide their GPA and budget to further tailor the recommendations.
-- 🎓🎯 **Relevant University Matches**
+3) 🎓🎯 **Relevant University Matches**:
 The platform displays a list of universities that fit the user's criteria. Users can select universities of interest and view detailed information, including authentic student experiences.
-- 📝 **Personalized Application Plan**
+4) 📝 **Personalized Application Plan**:
 The application plan is generated and shown directly in the user interface to help users organize their next steps.
-- 📅 **Application Deadlines**
+5) 📅 **Application Deadlines**:
 Users are shown the application deadlines for their selected universities to ensure they never miss an important date.
 
 ## 💻🛠️ Technology Stack
